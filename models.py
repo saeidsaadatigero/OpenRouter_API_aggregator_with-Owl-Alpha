@@ -24,6 +24,8 @@ class ChatMessage(Base):
     role = Column(String(50), nullable=False)  # 'user' or 'assistant'
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(20), nullable=False, default="pending")
+
 
     session = relationship("ChatSession", back_populates="messages")
 

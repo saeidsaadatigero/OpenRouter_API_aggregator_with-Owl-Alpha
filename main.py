@@ -2,6 +2,9 @@
 import os
 import json
 import logging
+from fastapi import BackgroundTasks
+from sqlalchemy.orm import Session as DBSession
+from database import SessionLocal
 from pathlib import Path
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request, Depends, HTTPException, Form
@@ -123,45 +126,77 @@ async def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/api/chat/{session_id}/send")
+def run_llm_in_background(message_id: int, messages_payload: list, model_name: str, api_key: str, base_url: str) -> None:
+    """Runs synchronously in a thread — completely decoupled from the HTTP request lifecycle."""
+    import asyncio
+    from openai import AsyncOpenAI
+
+    async def _call():
+        db: DBSession = SessionLocal()
+        try:
+            client = AsyncOpenAI(
+                base_url=base_url,
+                api_key=api_key,
+                default_headers={"HTTP-Referer": "https://localhost:8000"}
+            )
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=messages_payload,
+                temperature=0.3,
+                max_tokens=8000,
+                stream=False
+            )
+            reply = response.choices[0].message.content.strip()
+            chat_svc = ChatService(db)
+            chat_svc.update_message_content(message_id, reply, status="done")
+            logger.info(f"[BG-TASK] Message {message_id} completed successfully.")
+        except Exception as e:
+            logger.error(f"[BG-TASK-ERROR] Message {message_id} failed: {str(e)}")
+            chat_svc = ChatService(db)
+            chat_svc.update_message_content(message_id, f"⚠️ Error: {str(e)}", status="error")
+        finally:
+            db.close()
+
+    asyncio.run(_call())
+
+
+@app.post("/api/chat/{session_id}/send")
 async def handle_chat_send(
     session_id: int,
     payload: ChatSendPayload,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    logger.info(f"[SEND] Inbound chat message for session_id={session_id}")
+    logger.info(f"[SEND] session_id={session_id}")
 
     chat_manager = ChatService(db)
     chat_manager.update_session_title_fallback(session_id, payload.prompt)
-    chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt)
+    chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt, status="done")
 
+    # Build history BEFORE creating pending message
     history = chat_manager.get_session_messages(session_id)
-
     system_instruction = (
         "You are OWL, a Senior Python/AI Engineer and coding assistant. "
         "Answer clearly and helpfully. Use markdown for code blocks."
     )
-
     messages_payload = [{"role": "system", "content": system_instruction}]
     for msg in history:
-        messages_payload.append({"role": msg.role, "content": msg.content})
+        if msg.status == "done" and msg.content:
+            messages_payload.append({"role": msg.role, "content": msg.content})
 
-    try:
-        response = await coder_service.client.chat.completions.create(
-            model=coder_service.model_name,
-            messages=messages_payload,
-            temperature=0.3,
-            max_tokens=4000,
-            stream=False
-        )
-        assistant_reply = response.choices[0].message.content.strip()
-    except Exception as e:
-        logger.error(f"[SEND-ERROR] OpenRouter call failed: {str(e)}")
-        raise HTTPException(status_code=502, detail="Upstream model call failed.")
+    # Create placeholder — frontend polls this ID
+    pending_msg = chat_manager.add_pending_message(session_id=session_id, role="assistant")
 
-    chat_manager.add_message(session_id=session_id, role="assistant", content=assistant_reply)
-    logger.info(f"[SEND] Response saved for session_id={session_id}")
+    background_tasks.add_task(
+        run_llm_in_background,
+        message_id=pending_msg.id,
+        messages_payload=messages_payload,
+        model_name=coder_service.model_name,
+        api_key=coder_service.api_key,
+        base_url=coder_service.base_url
+    )
 
-    return {"response": assistant_reply}
+    return {"status": "processing", "message_id": pending_msg.id}
 
 
 @app.post("/api/chat/{session_id}/generate")
@@ -253,3 +288,16 @@ async def handle_chat_generation(
             yield f"data: {json.dumps({'type': 'error', 'detail': 'Internal pipeline operational error.'})}\n\n"
 
     return StreamingResponse(chat_event_generator(), media_type="text/event-stream")
+
+@app.get("/api/message/{message_id}/status")
+async def get_message_status(message_id: int, db: Session = Depends(get_db)):
+    """Frontend polls this every 2s to check if background LLM task is done."""
+    from models import ChatMessage
+    msg = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found.")
+    return {
+        "id": msg.id,
+        "status": msg.status,
+        "content": msg.content if msg.status in ("done", "error") else None
+    }

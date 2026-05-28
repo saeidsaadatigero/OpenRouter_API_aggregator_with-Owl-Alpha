@@ -1176,15 +1176,25 @@
                 const response = await fetch(`/api/chat/${activeSessionId}/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify({ prompt: promptText })
                 });
-                if (!response.ok) throw new Error();
+
+                if (!response.ok) throw new Error("Backend error.");
                 const data = await response.json();
+
+                if (data.status === 'processing' && data.message_id) {
+                    // Poll until done — survives refresh because work is in background
+                    pollMessageStatus(data.message_id, typingEl);
+                } else {
+                    const reply = data.response || data.content || "No response received.";
+                    removeTypingIndicator(typingEl);
+                    appendMessageBubble('assistant', reply);
+                }
+
+            } catch (err) {
+                console.error("[SUBMIT-ERROR]", err);
                 removeTypingIndicator(typingEl);
-                appendMessageBubble('assistant', data.response || data.content || 'No response.');
-            } catch(e) {
-                removeTypingIndicator(typingEl);
-                appendMessageBubble('assistant', '⚠️ **Retry failed.** Please try again.');
+                appendMessageBubble('assistant', '⚠️ **Connection error.** Could not reach the backend. Please try again.');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
@@ -1287,6 +1297,39 @@
         const styleEl = document.createElement('style');
         styleEl.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
         document.head.appendChild(styleEl);
+
+        function pollMessageStatus(messageId, typingEl) {
+            const POLL_INTERVAL_MS = 2000;
+            const MAX_ATTEMPTS = 150; // 5 minutes max
+            let attempts = 0;
+
+            const interval = setInterval(async () => {
+                attempts++;
+                if (attempts > MAX_ATTEMPTS) {
+                    clearInterval(interval);
+                    removeTypingIndicator(typingEl);
+                    appendMessageBubble('assistant', '⚠️ **Timeout.** The request took too long.');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/message/${messageId}/status`);
+                    if (!res.ok) return; // network hiccup — try again next tick
+
+                    const data = await res.json();
+
+                    if (data.status === 'done' || data.status === 'error') {
+                        clearInterval(interval);
+                        removeTypingIndicator(typingEl);
+                        appendMessageBubble('assistant', data.content || '⚠️ Empty response.');
+                    }
+                    // if still 'pending' or 'processing' — do nothing, wait next tick
+                } catch (e) {
+                    // network blip — continue polling
+                    console.warn('[POLL] Network hiccup, retrying...', e);
+                }
+            }, POLL_INTERVAL_MS);
+        }
     </script>
 </body>
 </html>

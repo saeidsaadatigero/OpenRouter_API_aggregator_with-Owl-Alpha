@@ -29,12 +29,12 @@ class ChatService:
             models.ChatMessage.session_id == session_id
         ).order_by(models.ChatMessage.created_at.asc()).all()
 
-    def add_message(self, session_id: int, role: str, content: str) -> models.ChatMessage:
-        logger.info(f"Appending new structural interaction message context log for role: {role}")
+    def add_message(self, session_id: int, role: str, content: str, status: str = "done") -> models.ChatMessage:
         message_record = models.ChatMessage(
             session_id=session_id,
             role=role,
-            content=content
+            content=content,
+            status=status
         )
         self.db.add(message_record)
         
@@ -78,3 +78,24 @@ class ChatService:
             self.db.commit()
             return True
         return False
+    
+    def add_pending_message(self, session_id: int, role: str) -> models.ChatMessage:
+        """Creates a placeholder assistant message with pending status."""
+        msg = models.ChatMessage(
+            session_id=session_id,
+            role=role,
+            content="",
+            status="pending"
+        )
+        self.db.add(msg)
+        self.db.commit()
+        self.db.refresh(msg)
+        return msg
+
+    def update_message_content(self, message_id: int, content: str, status: str = "done") -> None:
+        """Updates content and status of an existing message after background processing."""
+        msg = self.db.query(models.ChatMessage).filter(models.ChatMessage.id == message_id).first()
+        if msg:
+            msg.content = content
+            msg.status = status
+            self.db.commit()    
