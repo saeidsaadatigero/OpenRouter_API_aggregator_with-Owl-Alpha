@@ -51,6 +51,10 @@ class ChatRenamePayload(BaseModel):
     title: str = Field(..., min_length=1, max_length=128)
 
 
+class ChatSendPayload(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=10000)
+
+
 def validate_filename(filename: str) -> bool:
     if not filename or len(filename) > MAX_FILENAME_LENGTH:
         return False
@@ -66,7 +70,6 @@ def validate_filename(filename: str) -> bool:
 async def index_view(request: Request, db: Session = Depends(get_db)):
     chat_manager = ChatService(db)
     recent_chats = chat_manager.get_recent_sessions(limit=20)
-    
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -79,7 +82,6 @@ async def continue_chat_view(session_id: int, request: Request, db: Session = De
     chat_manager = ChatService(db)
     recent_chats = chat_manager.get_recent_sessions(limit=20)
     messages = chat_manager.get_session_messages(session_id)
-    
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -89,11 +91,10 @@ async def continue_chat_view(session_id: int, request: Request, db: Session = De
 
 @app.get("/api/chat/{session_id}/messages")
 async def get_chat_messages_json(session_id: int, db: Session = Depends(get_db)):
-    """API endpoint providing raw message array vectors to eliminate blank UI anomalies."""
     chat_manager = ChatService(db)
     messages = chat_manager.get_session_messages(session_id)
     return [
-        {"id": m.id, "role": m.role, "content": m.content, "filename": getattr(m, 'filename', None)} 
+        {"id": m.id, "role": m.role, "content": m.content, "filename": getattr(m, 'filename', None)}
         for m in messages
     ]
 
@@ -107,7 +108,6 @@ async def create_new_chat_session(db: Session = Depends(get_db)):
 
 @app.post("/api/chat/{session_id}/rename")
 async def rename_chat_session(session_id: int, payload: ChatRenamePayload, db: Session = Depends(get_db)):
-    """Modifies runtime context string token representation metadata identifier via structured JSON payload."""
     chat_manager = ChatService(db)
     if chat_manager.rename_session(session_id, payload.title.strip()):
         return {"status": "success", "message": "Session renamed successfully."}
@@ -116,11 +116,52 @@ async def rename_chat_session(session_id: int, payload: ChatRenamePayload, db: S
 
 @app.post("/api/chat/{session_id}/delete")
 async def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
-    """Triggers total operational cascade clearance of session data blocks."""
     chat_manager = ChatService(db)
     if chat_manager.delete_session(session_id):
         return {"status": "success", "message": "Session successfully cleared from DB stack."}
     raise HTTPException(status_code=404, detail="Target tracking thread context missing.")
+
+
+@app.post("/api/chat/{session_id}/send")
+async def handle_chat_send(
+    session_id: int,
+    payload: ChatSendPayload,
+    db: Session = Depends(get_db)
+):
+    logger.info(f"[SEND] Inbound chat message for session_id={session_id}")
+
+    chat_manager = ChatService(db)
+    chat_manager.update_session_title_fallback(session_id, payload.prompt)
+    chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt)
+
+    history = chat_manager.get_session_messages(session_id)
+
+    system_instruction = (
+        "You are OWL, a Senior Python/AI Engineer and coding assistant. "
+        "Answer clearly and helpfully. Use markdown for code blocks."
+    )
+
+    messages_payload = [{"role": "system", "content": system_instruction}]
+    for msg in history:
+        messages_payload.append({"role": msg.role, "content": msg.content})
+
+    try:
+        response = await coder_service.client.chat.completions.create(
+            model=coder_service.model_name,
+            messages=messages_payload,
+            temperature=0.3,
+            max_tokens=4000,
+            stream=False
+        )
+        assistant_reply = response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"[SEND-ERROR] OpenRouter call failed: {str(e)}")
+        raise HTTPException(status_code=502, detail="Upstream model call failed.")
+
+    chat_manager.add_message(session_id=session_id, role="assistant", content=assistant_reply)
+    logger.info(f"[SEND] Response saved for session_id={session_id}")
+
+    return {"response": assistant_reply}
 
 
 @app.post("/api/chat/{session_id}/generate")
@@ -131,15 +172,15 @@ async def handle_chat_generation(
     filename: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    logger.info(f"[INGRESS] Multi-layer connection event intercepted for session pipeline ID: {session_id}")
-    
+    logger.info(f"[INGRESS] Generation request for session_id={session_id}")
+
     if not prompt.strip():
         raise HTTPException(status_code=400, detail="Required user interaction prompt is blank.")
-    
+
     if not filename or not filename.strip():
-        logger.info("[AUTO-NAME] Filename field omitted. Launching predictive extraction sub-pipeline.")
+        logger.info("[AUTO-NAME] Filename omitted. Launching predictive extraction sub-pipeline.")
         filename = await coder_service.generate_safe_filename(prompt)
-        logger.info(f"[AUTO-NAME] LLM pipeline structurally designated target filename as: {filename}")
+        logger.info(f"[AUTO-NAME] LLM designated filename: {filename}")
 
     if not validate_filename(filename):
         raise HTTPException(status_code=400, detail="Sandbox structure constraint extension violation.")
@@ -156,19 +197,19 @@ async def handle_chat_generation(
         try:
             history_messages = chat_manager.get_session_messages(session_id)
             payload_messages = []
-            
+
             system_instruction = (
                 "You are OWL, a Senior Python/AI Engineer. Output clean, robust, OOP-compliant code "
                 "with strict type hints. Do NOT include markdown blocks like ```python or ```, "
                 "do NOT include conversational explanations or prose text. Output ONLY valid, raw executable code."
             )
             payload_messages.append({"role": "system", "content": system_instruction})
-            
+
             for msg in history_messages:
                 payload_messages.append({"role": msg.role, "content": msg.content})
 
-            logger.info(f"[OPENROUTER] Invoking remote upstream pipeline context tracking for sequence size: {len(payload_messages)}")
-            
+            logger.info(f"[OPENROUTER] Streaming for session_id={session_id}, messages={len(payload_messages)}")
+
             response = await coder_service.client.chat.completions.create(
                 model=coder_service.model_name,
                 messages=payload_messages,
@@ -185,35 +226,30 @@ async def handle_chat_generation(
             async def token_stream():
                 async for token in parse_stream():
                     if await request.is_disconnected():
-                        logger.warning(f"[ABORT] Connection dropped link by downstream browser network context: {session_id}")
+                        logger.warning(f"[ABORT] Client disconnected for session_id={session_id}")
                         return
                     accumulated_chunks.append(token)
-                    token_payload = json.dumps({'type': 'token', 'content': token})
-                    yield f"data: {token_payload}\n\n"
+                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
             async for stream_frame in token_stream():
                 yield stream_frame
 
             full_generated_output = "".join(accumulated_chunks)
-            
             chat_manager.add_message(session_id=session_id, role="assistant", content=full_generated_output)
 
             safe_target_path = (TARGET_BASE_DIR / filename).resolve()
             if not str(safe_target_path).startswith(str(TARGET_BASE_DIR)):
-                error_escape = json.dumps({'type': 'error', 'detail': 'Sandbox path escape containment failure.'})
-                yield f"data: {error_escape}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Sandbox path escape containment failure.'})}\n\n"
                 return
 
             os.makedirs(safe_target_path.parent, exist_ok=True)
             with open(safe_target_path, "w", encoding="utf-8") as file_handle:
                 file_handle.write(full_generated_output)
 
-            final_payload = json.dumps({'type': 'final', 'status': 'completed', 'filename': filename})
-            yield f"data: {final_payload}\n\n"
+            yield f"data: {json.dumps({'type': 'final', 'status': 'completed', 'filename': filename})}\n\n"
 
         except Exception as err:
-            logger.error(f"[PIPELINE-FAILURE] Stream broken down due to runtime root anomaly: {str(err)}")
-            error_payload = json.dumps({"type": "error", "detail": "Internal pipeline operational error."})
-            yield f"data: {error_payload}\n\n"
+            logger.error(f"[PIPELINE-FAILURE] Stream error: {str(err)}")
+            yield f"data: {json.dumps({'type': 'error', 'detail': 'Internal pipeline operational error.'})}\n\n"
 
     return StreamingResponse(chat_event_generator(), media_type="text/event-stream")
