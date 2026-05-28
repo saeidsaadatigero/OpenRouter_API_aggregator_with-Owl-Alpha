@@ -1048,9 +1048,27 @@
                     <div class="msg-label you">
                         <i class="fas fa-user" style="font-size:8px"></i> You
                     </div>
-                    <div class="msg-bubble-user">${escapeHtml(content)}</div>
+                    <div class="msg-bubble-user" style="position:relative">
+                        ${escapeHtml(content)}
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:5px;justify-content:flex-end">
+                        <button onclick="copyUserMessage(this)" title="Copy"
+                            style="background:var(--bg-elevated);border:1px solid var(--border-light);color:var(--text-muted);
+                                font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:6px;
+                                cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s"
+                            data-content="${escapeHtml(content).replace(/"/g, '&quot;')}">
+                            <i class="far fa-copy" style="font-size:10px"></i> Copy
+                        </button>
+                        <button onclick="retryMessage(this)" title="Retry"
+                            style="background:var(--bg-elevated);border:1px solid var(--border-light);color:var(--text-muted);
+                                font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:6px;
+                                cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s"
+                            data-prompt="${escapeHtml(content).replace(/"/g, '&quot;')}">
+                            <i class="fas fa-redo" style="font-size:9px"></i> Retry
+                        </button>
+                    </div>
                 `;
-            } else {
+                } else {
                 const bubbleDiv = document.createElement('div');
                 bubbleDiv.className = 'msg-bubble-assistant markdown-body';
                 bubbleDiv.innerHTML = marked.parse(content);
@@ -1123,6 +1141,56 @@
                 }, 2000);
             } catch (e) { console.error(e); }
         }
+
+        
+        async function copyUserMessage(btn) {
+            const text = btn.getAttribute('data-content');
+            try {
+                await navigator.clipboard.writeText(text);
+                btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
+                }, 2000);
+            } catch(e) { console.error(e); }
+        }
+
+        async function retryMessage(btn) {
+            const prompt = btn.getAttribute('data-prompt');
+            if (!prompt || !activeSessionId) return;
+
+            // remove last assistant response if exists
+            const messages = document.getElementById('chat-messages');
+            const allWrappers = messages.querySelectorAll('.msg-wrapper');
+            const lastWrapper = allWrappers[allWrappers.length - 1];
+            if (lastWrapper && lastWrapper.classList.contains('assistant')) {
+                lastWrapper.remove();
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
+
+            const typingEl = showTypingIndicator();
+
+            try {
+                const response = await fetch(`/api/chat/${activeSessionId}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+                removeTypingIndicator(typingEl);
+                appendMessageBubble('assistant', data.response || data.content || 'No response.');
+            } catch(e) {
+                removeTypingIndicator(typingEl);
+                appendMessageBubble('assistant', '⚠️ **Retry failed.** Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
+            }
+        }        
+
 
         // ── HYDRATE MESSAGES ─────────────────────────────
         async function hydrateExistingMessages(sessionId) {
