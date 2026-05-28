@@ -17,3 +17,4 @@ ENV/
 # IDEs and editors
 .vscode/
 .idea/
+*.db

@@ -42,7 +42,7 @@ coder_service = OpenRouterCodingService()
 
 MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
 MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
-ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css'}
+ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css', '.txt'}
 TARGET_BASE_DIR = Path("generated_components").resolve()
 
 
