@@ -7,15 +7,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Custom Premium Dark Scrollbars Integrated Exact Spec */
         ::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #1e1e2e;
+            background: #020617; /* Slate 950 */
         }
         ::-webkit-scrollbar-thumb {
-            background: #313244;
+            background: #1e293b; /* Slate 800 */
             border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0ea5e9; /* Cyan 500 */
+        }
+
+        /* Absolute pipeline loader animation layout */
+        .pipeline-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-radius: 50%;
+            border-top-color: #a855f7;
+            animation: spin-pipeline 0.8s linear infinite;
+        }
+
+        @keyframes spin-pipeline {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -63,8 +83,7 @@
             </div>
         </header>
 
-        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#11111b]">
-            </div>
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#11111b]"></div>
 
         <footer class="p-4 bg-[#1e1e2e] border-t border-[#313244]">
             <form id="generation-form" onsubmit="executeGenerationStream(event)" class="max-w-4xl mx-auto space-y-3">
@@ -93,7 +112,6 @@
     <script>
         const activeSessionId = "{{ active_session_id or '' }}";
 
-        // Lifecycle hook initialization sequence execution block
         document.addEventListener("DOMContentLoaded", () => {
             if (activeSessionId) {
                 hydrateExistingMessages(activeSessionId);
@@ -108,14 +126,13 @@
             }
         });
 
-        // Hydrates core UI nodes with persistent data blocks from DB endpoint layer
         async function hydrateExistingMessages(sessionId) {
             const container = document.getElementById("chat-messages");
             container.innerHTML = '';
             try {
                 const response = await fetch(`/api/chat/${sessionId}/messages`);
                 if (!response.ok) throw new Error("Failed to load pipeline message layers.");
-                const messages = await response.ok ? await response.json() : [];
+                const messages = await response.json();
                 
                 if (messages.length === 0) {
                     container.innerHTML = `
@@ -136,31 +153,64 @@
             }
         }
 
-        // Appends unified high-contrast block layouts to document frame hierarchy
         function appendMessageBubble(role, content) {
             const container = document.getElementById("chat-messages");
             const emptyState = document.getElementById("empty-state");
             if (emptyState) emptyState.remove();
 
             const wrapper = document.createElement("div");
-            wrapper.className = `flex flex-col space-y-1 max-w-3xl ${role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`;
+            wrapper.className = `flex flex-col space-y-1 w-full max-w-3xl ${role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start group'}`;
             
             const roleIndicator = role === 'user' ? 'OPERATOR' : 'OWL ENGINE CORE';
             const roleColor = role === 'user' ? 'text-[#f9e2af]' : 'text-[#a6e3a1]';
             
             const bodyClass = role === 'user' 
-                ? 'bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none' 
-                : 'bg-[#181825] text-[#a6e3a1] border border-[#313244] rounded-2xl rounded-tl-none font-mono text-xs leading-relaxed whitespace-pre-wrap';
+                ? 'bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none py-3 px-4 shadow-md' 
+                : 'bg-[#181825] text-[#a6e3a1] border border-[#313244] rounded-2xl rounded-tl-none font-mono text-xs leading-relaxed whitespace-pre-wrap py-3 px-4 shadow-md relative w-full';
 
-            wrapper.innerHTML = `
-                <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
-                <div class="py-3 px-4 shadow-md ${bodyClass}">${escapeHtml(content)}</div>
-            `;
+            if (role === 'user') {
+                wrapper.innerHTML = `
+                    <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
+                    <div class="${bodyClass}">${escapeHtml(content)}</div>
+                `;
+            } else {
+                wrapper.innerHTML = `
+                    <div class="flex items-center justify-between w-full mb-0.5 px-1">
+                        <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
+                        <button onclick="copyCodeContents(this)" class="text-[10px] bg-[#1e1e2e] hover:bg-[#313244] border border-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] px-2 py-0.5 rounded transition flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-sm">
+                            <i class="fas fa-copy text-[9px]"></i> <span>Copy Code</span>
+                        </button>
+                    </div>
+                    <div class="${bodyClass}">${escapeHtml(content)}</div>
+                `;
+            }
+
             container.appendChild(wrapper);
             return wrapper;
         }
 
-        // Structural operational controller for generating dynamic SSE execution streams
+        async function copyCodeContents(buttonElement) {
+            const containerDiv = buttonElement.closest('.group').querySelector('.font-mono');
+            if (!containerDiv) return;
+            
+            const rawTextContent = containerDiv.textContent;
+            try {
+                await navigator.clipboard.writeText(rawTextContent);
+                const label = buttonElement.querySelector('span');
+                const icon = buttonElement.querySelector('i');
+                
+                label.textContent = "Copied!";
+                icon.className = "fas fa-check text-[#a6e3a1] text-[9px]";
+                
+                setTimeout(() => {
+                    label.textContent = "Copy Code";
+                    icon.className = "fas fa-copy text-[9px]";
+                }, 2000);
+            } catch (err) {
+                console.error("[CLIPBOARD-ERROR] Copy execution failed:", err);
+            }
+        }
+
         async function executeGenerationStream(event) {
             event.preventDefault();
             if (!activeSessionId) return;
@@ -175,7 +225,6 @@
 
             if (!prompt) return;
 
-            // Optimistic UI interaction lock execution sequence
             appendMessageBubble("user", prompt);
             promptInput.value = '';
             submitBtn.disabled = true;
@@ -186,10 +235,17 @@
             formData.append("prompt", prompt);
             if (filename) formData.append("filename", filename);
 
-            // Pre-allocate Assistant token cluster node space inside target DOM wrapper
             const assistantBubble = appendMessageBubble("assistant", "");
-            const tokenTargetNode = assistantBubble.querySelector("div");
+            const tokenTargetNode = assistantBubble.querySelector(".font-mono");
             scrollTerminalToBottom();
+
+            // Inject standalone inline CSS spinner structure inside the target text layer
+            tokenTargetNode.innerHTML = `
+                <div id="stream-loading-placeholder" class="flex items-center gap-2 py-1 text-[#a6adc8]">
+                    <div class="pipeline-spinner"></div>
+                    <span class="italic animate-pulse">OWL Engine parsing context & compiling source nodes...</span>
+                </div>
+            `;
 
             try {
                 const response = await fetch(`/api/chat/${activeSessionId}/generate`, {
@@ -202,6 +258,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let executionBuffer = "";
+                let isFirstToken = true;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -209,7 +266,7 @@
 
                     executionBuffer += decoder.decode(value, { stream: true });
                     const processingLines = executionBuffer.split("\n\n");
-                    executionBuffer = processingLines.pop(); // Hold incomplete frame
+                    executionBuffer = processingLines.pop();
 
                     for (const rawLine of processingLines) {
                         const line = rawLine.trim();
@@ -218,6 +275,11 @@
                         try {
                             const parsedJson = JSON.parse(line.substring(6));
                             if (parsedJson.type === "token") {
+                                // Wipe the spinner placeholder exactly upon first actual stream frame arrival
+                                if (isFirstToken) {
+                                    tokenTargetNode.innerHTML = "";
+                                    isFirstToken = false;
+                                }
                                 tokenTargetNode.textContent += parsedJson.content;
                                 scrollTerminalToBottom();
                             } else if (parsedJson.type === "final") {
@@ -232,7 +294,7 @@
                 }
             } catch (streamErr) {
                 console.error("[STREAM-FAULT]", streamErr);
-                tokenTargetNode.innerHTML += `<div class="mt-2 p-2 bg-[#f38ba8]/20 text-[#f38ba8] rounded text-xs">Pipeline transmission dropped structurally.</div>`;
+                tokenTargetNode.innerHTML = `<div class="p-2 bg-[#f38ba8]/20 text-[#f38ba8] rounded text-xs">Pipeline transmission dropped structurally.</div>`;
                 ticker.textContent = "Execution failure.";
             } finally {
                 submitBtn.disabled = false;
@@ -241,7 +303,6 @@
             }
         }
 
-        // Dispatches structural mutations to update title reference maps
         async function triggerRenamePipeline(sessionId, currentTitle) {
             const newTitle = prompt("Enter replacement tracking identifier for this pipeline context:", currentTitle);
             if (newTitle === null || newTitle.trim() === "") return;
@@ -261,7 +322,6 @@
             }
         }
 
-        // Dispatches complete thread erasure request down database driver pipelines
         async function triggerDeletePipeline(sessionId) {
             if (!confirm("Confirm catastrophic database erasure operation for this session thread context?")) return;
 
@@ -280,7 +340,6 @@
             }
         }
 
-        // Submits structural request to allocate entirely blank pipeline instances
         async function createNewSession() {
             try {
                 const res = await fetch("/api/chat/new", { method: "POST" });
