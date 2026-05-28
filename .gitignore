@@ -1,0 +1,19 @@
+# path/.gitignore
+
+# Environment Variables
+.env
+
+# Python caching & bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# IDEs and editors
+.vscode/
+.idea/
