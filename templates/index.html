@@ -33,7 +33,6 @@
 </head>
 <body class="bg-[#11111b] text-[#cdd6f4] font-sans antialiased h-screen flex overflow-hidden select-none">
 
-    <!-- SIDEBAR COMPONENT -->
     <aside class="w-80 bg-[#1e1e2e] border-r border-[#313244] flex flex-col h-full shrink-0">
         <div class="p-4 border-b border-[#313244]">
             <button onclick="createNewSession()" class="w-full bg-[#89b4fa] hover:bg-[#b4befe] text-[#11111b] font-semibold py-2.5 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-lg">
@@ -41,7 +40,6 @@
             </button>
         </div>
         
-        <!-- NAV LIST CONTAINER -->
         <nav class="flex-1 overflow-y-auto p-2 space-y-1" id="sessions-container">
             {% for chat in recent_chats %}
             <div id="session-item-{{ chat.id }}" class="group relative flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-200 {% if chat.id == active_session_id %}bg-[#313244] text-[#89b4fa] shadow-sm{% else %}hover:bg-[#181825]/60 text-[#a6adc8]{% endif %}">
@@ -74,7 +72,6 @@
         </div>
     </aside>
 
-    <!-- MAIN TERMINAL WORKSPACE -->
     <main class="flex-1 flex flex-col h-full bg-[#11111b] relative">
         <header class="h-16 border-b border-[#313244] bg-[#1e1e2e] flex items-center justify-between px-6 shadow-md z-10">
             <div class="flex items-center gap-3">
@@ -99,7 +96,6 @@
         </footer>
     </main>
 
-    <!-- RENAME DIALOG SURFACE OVERLAY -->
     <div id="gemini-modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center transition-all duration-200">
         <div class="bg-[#1e1e2e] border border-[#313244] w-full max-w-sm rounded-2xl shadow-2xl p-6 transform scale-95 transition-transform duration-200" id="gemini-modal-surface">
             <h2 class="text-lg font-semibold text-[#cdd6f4] mb-4">Rename this chat</h2>
@@ -141,6 +137,64 @@
                 const saveBtn = document.getElementById('modal-save-btn');
                 saveBtn.disabled = (val === "" || val === originalChatTitle);
             });
+
+            // ATTACHMENT PIPELINE: Inbound Core Form Submission Handler
+            const generationForm = document.getElementById('generation-form');
+            if (generationForm) {
+                generationForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const promptInput = document.getElementById('prompt-input');
+                    const submitBtn = document.getElementById('submit-btn');
+                    const promptText = promptInput.value.trim();
+                    
+                    if (!promptText || !activeSessionId) return;
+                    
+                    // Optimistic UI updates
+                    appendMessageBubble('user', promptText);
+                    promptInput.value = '';
+                    
+                    // Lock control systems to block double execution spikes
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin text-sm"></i>';
+                    
+                    try {
+                        const response = await fetch(`/api/chat/${activeSessionId}/send`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt: promptText })
+                        });
+                        
+                        if (!response.ok) throw new Error("Inbound payload rejection from runtime backend.");
+                        
+                        const data = await response.json();
+                        // Support standard multi-model DB-stored log patterns
+                        const assistantReply = data.response || data.content || "Empty tracking trace generated.";
+                        
+                        appendMessageBubble('assistant', assistantReply);
+                        
+                        const container = document.getElementById("chat-messages");
+                        container.scrollTop = container.scrollHeight;
+                    } catch (err) {
+                        console.error("[FORM-SUBMISSION-EXCEPTION]", err);
+                        appendMessageBubble('assistant', "Structural Failure: System endpoint isolated or failed to resolve model matrix.");
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane text-sm"></i>';
+                    }
+                });
+            }
+
+            // Keyboard optimization layer for textarea execution workflows
+            const promptArea = document.getElementById('prompt-input');
+            if (promptArea) {
+                promptArea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        generationForm.requestSubmit();
+                    }
+                });
+            }
         });
 
         function toggleActionDropdown(event, chatId) {
@@ -281,7 +335,7 @@
                     headerNode.innerHTML = `
                         <span class="font-semibold tracking-wide text-[#94e2d5]">${normalizedLang}</span>
                         <div class="flex items-center gap-4">
-                            <button onclick="executeCodeSnippetCopy(this)" class="hover:text-[#89b4fa] text-[#a6adc8] transition-all relative group flex items-center justify-center p-1">
+                            <button type="button" onclick="executeCodeSnippetCopy(this)" class="hover:text-[#89b4fa] text-[#a6adc8] transition-all relative group flex items-center justify-center p-1">
                                 <i class="far fa-copy text-sm"></i>
                                 <span class="absolute bottom-full mb-2 bg-[#11111b] text-[#cdd6f4] border border-[#313244] text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap pointer-events-none shadow-2xl">Copy code</span>
                             </button>
@@ -301,6 +355,7 @@
                 });
             }
             container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
         }
 
         async function executeCodeSnippetCopy(buttonElement) {
@@ -308,7 +363,6 @@
             const targetCodeNode = scopeWrapper.querySelector('pre code');
             if (!targetCodeNode) return;
             
-            // Access text payload isolating hidden HTML injection frameworks
             const payloadString = targetCodeNode.innerText;
             
             try {
