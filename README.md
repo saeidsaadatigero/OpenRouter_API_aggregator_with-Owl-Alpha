@@ -25,6 +25,7 @@ pip install openai python-decouple
 
 
 3. Configure environment variables. Create a `.env` file in the root directory:
+https://openrouter.ai/
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 
