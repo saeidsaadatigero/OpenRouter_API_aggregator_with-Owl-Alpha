@@ -56,3 +56,29 @@ class OpenRouterCodingService:
         except Exception as e:
             logger.error(f"[OPENROUTER-ERROR] Pipeline broken during upstream processing: {str(e)}")
             raise e
+        
+    async def generate_safe_filename(self, user_prompt: str) -> str:
+        """Invokes upstream LLM to dynamically determine a secure, context-aware filename based on the prompt."""
+        try:
+            system_instruction = (
+                "Analyze the user request and output ONLY a single valid, safe filename with an appropriate extension "
+                "that matches the programming language or context. Do NOT output code, introduction, quotes, or markdown. "
+                "Example: data_parser.py"
+            )
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": f"Generate a filename for this request: {user_prompt}"}
+                ],
+                temperature=0.1,
+                max_tokens=20,
+                stream=False
+            )
+            generated_name = response.choices[0].message.content.strip()
+            # Clean potential markdown wrapping artifacts
+            generated_name = generated_name.replace("`", "").replace("'", "").replace('"', "")
+            return generated_name if generated_name else "component.py"
+        except Exception as llm_err:
+            logging.getLogger(__name__).error(f"[AUTO-NAME-ERROR] Failed to infer filename: {str(llm_err)}")
+            return "component.py"

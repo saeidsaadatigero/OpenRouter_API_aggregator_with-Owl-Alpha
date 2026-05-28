@@ -82,6 +82,17 @@ async def continue_chat_view(session_id: int, request: Request, db: Session = De
     )
 
 
+@app.get("/api/chat/{session_id}/messages")
+async def get_chat_messages_json(session_id: int, db: Session = Depends(get_db)):
+    """API endpoint providing raw message array vectors to eliminate blank UI anomalies."""
+    chat_manager = ChatService(db)
+    messages = chat_manager.get_session_messages(session_id)
+    return [
+        {"id": m.id, "role": m.role, "content": m.content, "filename": getattr(m, 'filename', None)} 
+        for m in messages
+    ]
+
+
 @app.post("/api/chat/new")
 async def create_new_chat_session(db: Session = Depends(get_db)):
     chat_manager = ChatService(db)
@@ -89,19 +100,43 @@ async def create_new_chat_session(db: Session = Depends(get_db)):
     return {"status": "success", "session_id": new_session.id}
 
 
+@app.post("/api/chat/{session_id}/rename")
+async def rename_chat_session(session_id: int, title: str = Form(...), db: Session = Depends(get_db)):
+    """Modifies runtime context string token representation metadata identifier."""
+    chat_manager = ChatService(db)
+    if chat_manager.rename_session(session_id, title.strip()):
+        return {"status": "success", "message": "Session renamed successfully."}
+    raise HTTPException(status_code=404, detail="Target tracking thread context missing.")
+
+
+@app.post("/api/chat/{session_id}/delete")
+async def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
+    """Triggers total operational cascade clearance of session data blocks."""
+    chat_manager = ChatService(db)
+    if chat_manager.delete_session(session_id):
+        return {"status": "success", "message": "Session successfully cleared from DB stack."}
+    raise HTTPException(status_code=404, detail="Target tracking thread context missing.")
+
+
 @app.post("/api/chat/{session_id}/generate")
 async def handle_chat_generation(
     session_id: int,
     request: Request,
     prompt: str = Form(...),
-    filename: str = Form(...),
+    filename: str = Form(None),
     db: Session = Depends(get_db)
 ):
     logger.info(f"[INGRESS] Multi-layer connection event intercepted for session pipeline ID: {session_id}")
     
-    if not prompt.strip() or not filename.strip():
-        raise HTTPException(status_code=400, detail="Required parameters are blank.")
-        
+    if not prompt.strip():
+        raise HTTPException(status_code=400, detail="Required user interaction prompt is blank.")
+    
+    # Automated filename extraction matching the 'Gemini Model Standard'
+    if not filename or not filename.strip():
+        logger.info("[AUTO-NAME] Filename field omitted. Launching predictive extraction sub-pipeline.")
+        filename = await coder_service.generate_safe_filename(prompt)
+        logger.info(f"[AUTO-NAME] LLM pipeline structurally designated target filename as: {filename}")
+
     if not validate_filename(filename):
         raise HTTPException(status_code=400, detail="Sandbox structure constraint extension violation.")
 
@@ -130,7 +165,6 @@ async def handle_chat_generation(
             for msg in history_messages:
                 payload_messages.append({"role": msg.role, "content": msg.content})
 
-            # Override default service mapping stream invocation explicitly
             logger.info(f"[OPENROUTER] Invoking remote upstream pipeline context tracking for sequence size: {len(payload_messages)}")
             
             response = await coder_service.client.chat.completions.create(

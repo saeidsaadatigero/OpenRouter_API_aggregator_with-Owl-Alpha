@@ -60,3 +60,21 @@ class ChatService:
         for msg in session_messages:
             payload.append({"role": msg.role, "content": msg.content})
         return payload
+
+    def rename_session(self, session_id: int, new_title: str) -> bool:
+        """Updates the title of a specific chat session."""
+        session = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
+        if session:
+            session.title = new_title
+            self.db.commit()
+            return True
+        return False
+
+    def delete_session(self, session_id: int) -> bool:
+        """Deletes a chat session and cascades cleanup to associated messages."""
+        session = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
+        if session:
+            self.db.delete(session)
+            self.db.commit()
+            return True
+        return False
