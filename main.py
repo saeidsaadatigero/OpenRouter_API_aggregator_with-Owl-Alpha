@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from decouple import config
+from pydantic import BaseModel, Field
 
 import models
 from database import engine, get_db
@@ -44,6 +45,10 @@ MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
 MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css', '.txt'}
 TARGET_BASE_DIR = Path("generated_components").resolve()
+
+
+class ChatRenamePayload(BaseModel):
+    title: str = Field(..., min_length=1, max_length=128)
 
 
 def validate_filename(filename: str) -> bool:
@@ -101,10 +106,10 @@ async def create_new_chat_session(db: Session = Depends(get_db)):
 
 
 @app.post("/api/chat/{session_id}/rename")
-async def rename_chat_session(session_id: int, title: str = Form(...), db: Session = Depends(get_db)):
-    """Modifies runtime context string token representation metadata identifier."""
+async def rename_chat_session(session_id: int, payload: ChatRenamePayload, db: Session = Depends(get_db)):
+    """Modifies runtime context string token representation metadata identifier via structured JSON payload."""
     chat_manager = ChatService(db)
-    if chat_manager.rename_session(session_id, title.strip()):
+    if chat_manager.rename_session(session_id, payload.title.strip()):
         return {"status": "success", "message": "Session renamed successfully."}
     raise HTTPException(status_code=404, detail="Target tracking thread context missing.")
 
@@ -131,7 +136,6 @@ async def handle_chat_generation(
     if not prompt.strip():
         raise HTTPException(status_code=400, detail="Required user interaction prompt is blank.")
     
-    # Automated filename extraction matching the 'Gemini Model Standard'
     if not filename or not filename.strip():
         logger.info("[AUTO-NAME] Filename field omitted. Launching predictive extraction sub-pipeline.")
         filename = await coder_service.generate_safe_filename(prompt)
@@ -153,7 +157,6 @@ async def handle_chat_generation(
             history_messages = chat_manager.get_session_messages(session_id)
             payload_messages = []
             
-            # Append standard system framing instructions first
             system_instruction = (
                 "You are OWL, a Senior Python/AI Engineer. Output clean, robust, OOP-compliant code "
                 "with strict type hints. Do NOT include markdown blocks like ```python or ```, "
@@ -161,7 +164,6 @@ async def handle_chat_generation(
             )
             payload_messages.append({"role": "system", "content": system_instruction})
             
-            # Map structural database query records into operational OpenAI payload
             for msg in history_messages:
                 payload_messages.append({"role": msg.role, "content": msg.content})
 
@@ -194,10 +196,8 @@ async def handle_chat_generation(
 
             full_generated_output = "".join(accumulated_chunks)
             
-            # Persist assistant production log trace to DB schema model tracking
             chat_manager.add_message(session_id=session_id, role="assistant", content=full_generated_output)
 
-            # Local isolated Sandbox I/O File System Compilation Dump
             safe_target_path = (TARGET_BASE_DIR / filename).resolve()
             if not str(safe_target_path).startswith(str(TARGET_BASE_DIR)):
                 error_escape = json.dumps({'type': 'error', 'detail': 'Sandbox path escape containment failure.'})

@@ -18,3 +18,4 @@ ENV/
 .vscode/
 .idea/
 *.db
+openrouter_studio.db

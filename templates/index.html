@@ -6,59 +6,32 @@
     <title>OpenRouter Studio Client</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Highlight.js Base Stylesheet (Using Tokyo Night / Dark style that perfectly blends with Catppuccin Mocha) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
-    <!-- Markdown and Highlight Engines Integration -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <style>
-        /* Custom Premium Dark Scrollbars Integrated Exact Spec */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #020617; /* Slate 950 */
+            background: #020617;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e293b; /* Slate 800 */
+            background: #1e293b;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #0ea5e9; /* Cyan 500 */
+            background: #89b4fa;
         }
-
-        /* Absolute pipeline loader animation layout */
-        .pipeline-spinner {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid rgba(168, 85, 247, 0.3);
-            border-radius: 50%;
-            border-top-color: #a855f7;
-            animation: spin-pipeline 0.8s linear infinite;
-        }
-
-        @keyframes spin-pipeline {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Custom Catppuccin Token Overrides to match Gemini Premium UI */
         .hljs {
             background: #181825 !important;
             color: #cdd6f4 !important;
             padding: 0 !important;
         }
-        .hljs-keyword, .hljs-selector-tag { color: #cba6f7 !important; font-weight: bold; }
-        .hljs-string, .hljs-meta-string { color: #a6e3a1 !important; }
-        .hljs-title, .hljs-title.function_ { color: #89b4fa !important; }
-        .hljs-attr, .hljs-property { color: #89dceb !important; }
-        .hljs-comment { color: #6c7086 !important; font-style: italic; }
-        .hljs-number, .hljs-literal { color: #fab387 !important; }
-        .hljs-built_in { color: #f38ba8 !important; }
     </style>
 </head>
-<body class="bg-[#11111b] text-[#cdd6f4] font-sans antialiased h-screen flex overflow-hidden">
+<body class="bg-[#11111b] text-[#cdd6f4] font-sans antialiased h-screen flex overflow-hidden select-none">
 
     <aside class="w-80 bg-[#1e1e2e] border-r border-[#313244] flex flex-col h-full shrink-0">
         <div class="p-4 border-b border-[#313244]">
@@ -69,18 +42,25 @@
         
         <nav class="flex-1 overflow-y-auto p-2 space-y-1" id="sessions-container">
             {% for chat in recent_chats %}
-            <div id="session-item-{{ chat.id }}" class="group flex items-center justify-between rounded-lg p-3 transition duration-150 {% if chat.id == active_session_id %}bg-[#313244] text-[#89b4fa]{% else %}hover:bg-[#181825] text-[#a6adc8]{% endif %}">
-                <a href="/chat/{{ chat.id }}" class="flex-1 truncate font-medium text-sm pr-2">
-                    <i class="fas fa-code-branch mr-2 opacity-70"></i>
+            <div id="session-item-{{ chat.id }}" class="group relative flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-200 {% if chat.id == active_session_id %}bg-[#313244] text-[#89b4fa] shadow-sm{% else %}hover:bg-[#181825]/60 text-[#a6adc8]{% endif %}">
+                <a href="/chat/{{ chat.id }}" class="flex-1 truncate font-medium text-sm pr-8 flex items-center gap-2.5">
+                    <i class="fas fa-comment-alt opacity-60 text-xs"></i>
                     <span id="session-text-{{ chat.id }}">{{ chat.title or 'Untitled Operational Pipeline' }}</span>
                 </a>
-                <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    <button onclick="triggerRenamePipeline({{ chat.id }})" class="text-[#a6adc8] hover:text-[#f9e2af] p-1 transition" title="Rename Session">
-                        <i class="fas fa-edit text-xs"></i>
+                
+                <div class="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center">
+                    <button onclick="toggleActionDropdown(event, {{ chat.id }})" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#45475a] text-[#a6adc8] hover:text-[#cdd6f4] transition">
+                        <i class="fas fa-ellipsis-v text-xs"></i>
                     </button>
-                    <button onclick="triggerDeletePipeline({{ chat.id }})" class="text-[#a6adc8] hover:text-[#f38ba8] p-1 transition" title="Delete Session">
-                        <i class="fas fa-trash-alt text-xs"></i>
-                    </button>
+                    
+                    <div id="dropdown-{{ chat.id }}" class="hidden absolute right-0 top-8 bg-[#181825] border border-[#313244] rounded-xl shadow-2xl py-1.5 w-36 z-50 transform origin-top-right transition-all">
+                        <button data-id="{{ chat.id }}" data-title="{{ chat.title or '' }}" onclick="openRenameModal(event, this)" class="w-full text-left px-4 py-2 text-xs font-medium text-[#cdd6f4] hover:bg-[#313244] flex items-center gap-2 transition">
+                            <i class="fas fa-pen text-[#f9e2af]"></i> Rename
+                        </button>
+                        <button onclick="triggerDeletePipeline(event, {{ chat.id }})" class="w-full text-left px-4 py-2 text-xs font-medium text-[#f38ba8] hover:bg-[#313244]/50 flex items-center gap-2 transition">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -108,108 +88,145 @@
             <form id="generation-form" class="max-w-4xl mx-auto space-y-3">
                 <div class="flex items-center gap-3 bg-[#11111b] border border-[#313244] rounded-xl p-2.5 focus-within:border-[#89b4fa] transition shadow-inner">
                     <textarea id="prompt-input" required rows="1" placeholder="Enter structural generation rules or algorithmic prompts..." class="flex-1 bg-transparent border-0 outline-none focus:ring-0 text-sm text-[#cdd6f4] placeholder-[#6c7086] resize-none h-10 py-2.5 px-2"></textarea>
-                    
-                    <div class="relative max-w-xs hidden sm:block">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[#6c7086] text-xs">
-                            <i class="fas fa-file-signature"></i>
-                        </span>
-                        <input type="text" id="filename-input" placeholder="Auto-detect filename" class="w-48 bg-[#181825] border border-[#313244] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#cdd6f4] focus:outline-none focus:border-[#89b4fa] transition">
-                    </div>
-
                     <button type="submit" id="submit-btn" class="bg-[#89b4fa] hover:bg-[#b4befe] text-[#11111b] w-10 h-10 rounded-lg flex items-center justify-center transition duration-200 shrink-0 shadow">
                         <i class="fas fa-paper-plane text-sm"></i>
                     </button>
-                </div>
-                <div class="flex items-center justify-between px-1 text-[11px] text-[#6c7086]">
-                    <span>* Leave target filename empty for predictive LLM context generation modeling.</span>
-                    <span id="stream-status-ticker" class="italic text-[#89b4fa]"></span>
                 </div>
             </form>
         </footer>
     </main>
 
+    <div id="gemini-modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center transition-all duration-200">
+        <div class="bg-[#1e1e2e] border border-[#313244] w-full max-w-sm rounded-2xl shadow-2xl p-6 transform scale-95 transition-transform duration-200" id="gemini-modal-surface">
+            <h2 class="text-lg font-semibold text-[#cdd6f4] mb-4">Rename this chat</h2>
+            
+            <div class="mb-6 relative">
+                <input type="text" id="modal-title-input" maxlength="128" autocomplete="off" class="w-full bg-[#11111b] border-2 border-[#313244] focus:border-[#89b4fa] rounded-xl px-4 py-3 text-sm text-[#cdd6f4] placeholder-[#6c7086] outline-none transition-all duration-200">
+            </div>
+            
+            <div class="flex items-center justify-end gap-3">
+                <button onclick="closeRenameModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-[#a6adc8] hover:bg-[#313244] hover:text-[#cdd6f4] transition duration-150">
+                    Cancel
+                </button>
+                <button id="modal-save-btn" onclick="submitRenamePipeline()" disabled class="px-5 py-2 rounded-xl text-sm font-medium bg-[#89b4fa] text-[#11111b] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#b4befe] transition duration-150 shadow-md">
+                    Rename
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const activeSessionId = "{{ active_session_id or '' }}";
+        let currentEditingChatId = null;
+        let originalChatTitle = "";
 
-        // Configure marked engine with highlight integration
         marked.setOptions({
-            highlight: function(code, lang) {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                return hljs.highlight(code, { language }).value;
-            },
+            highlight: (code, lang) => hljs.highlight(code, { language: hljs.getLanguage(lang) ? lang : 'plaintext' }).value,
             langPrefix: 'hljs language-'
         });
 
         document.addEventListener("DOMContentLoaded", () => {
-            if (activeSessionId) {
-                hydrateExistingMessages(activeSessionId);
-            } else {
-                document.getElementById("chat-messages").innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center space-y-4 p-8 opacity-40">
-                        <i class="fas fa-terminal text-5xl text-[#89b4fa]"></i>
-                        <p class="text-sm font-medium tracking-wide">Workspace unassigned. Initialize or load a network session pipeline.</p>
-                    </div>
-                `;
-                document.getElementById("generation-form").style.display = "none";
-            }
+            if (activeSessionId) hydrateExistingMessages(activeSessionId);
+            
+            document.addEventListener('click', () => {
+                document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+            });
+
+            document.getElementById('modal-title-input').addEventListener('input', (e) => {
+                const val = e.target.value.trim();
+                const saveBtn = document.getElementById('modal-save-btn');
+                saveBtn.disabled = (val === "" || val === originalChatTitle);
+            });
         });
 
-        // Initialize new active operational session context
-        async function createNewSession() {
-            try {
-                const response = await fetch('/api/chat/session', { method: 'POST' });
-                if (!response.ok) throw new Error("Backend synchronization failure during creation.");
-                const data = await response.json();
-                window.location.href = `/chat/${data.id}`;
-            } catch (err) {
-                console.error("[SESSION-CREATION-FAILURE]", err);
-                alert("Critical error initializing new operational pipeline session.");
-            }
+        function toggleActionDropdown(event, chatId) {
+            event.stopPropagation();
+            document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+                if(d.id !== `dropdown-${chatId}`) d.classList.add('hidden');
+            });
+            const targetDropdown = document.getElementById(`dropdown-${chatId}`);
+            targetDropdown.classList.toggle('hidden');
         }
 
-        // Trigger asynchronous mutation layer for renaming sessions
-        async function triggerRenamePipeline(chatId) {
-            const titleSpan = document.getElementById(`session-text-${chatId}`);
-            const currentTitle = titleSpan ? titleSpan.textContent.trim() : "";
-            const newTitle = prompt("Enter new structural title for this pipeline session:", currentTitle);
+        function openRenameModal(event, element) {
+            event.stopPropagation();
             
-            if (!newTitle || newTitle.trim() === "" || newTitle.trim() === currentTitle) return;
+            // Extract attributes systematically from DOM node bounds
+            currentEditingChatId = element.getAttribute('data-id');
+            originalChatTitle = element.getAttribute('data-title').trim();
+            
+            const backdrop = document.getElementById('gemini-modal-backdrop');
+            const input = document.getElementById('modal-title-input');
+            const saveBtn = document.getElementById('modal-save-btn');
+            
+            input.value = originalChatTitle;
+            saveBtn.disabled = true;
+            
+            backdrop.classList.remove('hidden');
+            backdrop.classList.add('flex');
+            input.focus();
+            input.select();
+        }
+
+        function closeRenameModal() {
+            const backdrop = document.getElementById('gemini-modal-backdrop');
+            backdrop.classList.add('hidden');
+            backdrop.classList.remove('flex');
+            currentEditingChatId = null;
+            originalChatTitle = "";
+        }
+
+        async function submitRenamePipeline() {
+            const input = document.getElementById('modal-title-input');
+            const newTitle = input.value.trim();
+            if (!newTitle || newTitle === originalChatTitle || !currentEditingChatId) return;
 
             try {
-                const response = await fetch(`/api/chat/${chatId}/rename`, {
+                const response = await fetch(`/api/chat/${currentEditingChatId}/rename`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: newTitle.trim() })
+                    body: JSON.stringify({ title: newTitle })
                 });
 
-                if (!response.ok) throw new Error("Failed to persist renamed structural token.");
+                if (!response.ok) throw new Error("Backend infrastructure validation failed.");
                 
+                const titleSpan = document.getElementById(`session-text-${currentEditingChatId}`);
                 if (titleSpan) {
-                    titleSpan.textContent = newTitle.trim();
+                    titleSpan.textContent = newTitle;
+                    // Dynamically refresh data attribute mapping to guarantee successive updates match state
+                    const actionBtn = document.querySelector(`button[data-id="${currentEditingChatId}"]`);
+                    if (actionBtn) actionBtn.setAttribute('data-title', newTitle);
                 }
+                
+                closeRenameModal();
             } catch (err) {
-                console.error("[RENAME-FAILURE]", err);
-                alert("Error updating pipeline title execution layer.");
+                console.error("[RENAME-EXCEPTION]", err);
+                alert("Critical failure synchronizing metadata mutation stack with Python Core.");
             }
         }
 
-        // Trigger network call to purge historical session components
-        async function triggerDeletePipeline(chatId) {
+        async function triggerDeletePipeline(event, chatId) {
+            event.stopPropagation();
             if (!confirm("Are you sure you want to terminate this operational pipeline session context?")) return;
 
             try {
-                const response = await fetch(`/api/chat/${chatId}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error("Failed to purge pipeline session from DB storage.");
+                const response = await fetch(`/api/chat/${chatId}/delete`, { method: 'POST' });
+                if (!response.ok) throw new Error("Purge rejected by storage node.");
 
-                const item = document.getElementById(`session-item-${chatId}`);
-                if (item) item.remove();
-
-                if (activeSessionId == chatId) {
-                    window.location.href = '/';
-                }
+                document.getElementById(`session-item-${chatId}`).remove();
+                if (activeSessionId == chatId) window.location.href = '/';
             } catch (err) {
-                console.error("[DELETE-FAILURE]", err);
-                alert("Error purging historical operational pipeline layer.");
+                console.error("[DELETE-EXCEPTION]", err);
+            }
+        }
+
+        async function createNewSession() {
+            try {
+                const response = await fetch('/api/chat/new', { method: 'POST' });
+                const data = await response.json();
+                window.location.href = `/chat/${data.session_id}`;
+            } catch (err) {
+                console.error("[CREATION-FAILURE]", err);
             }
         }
 
@@ -218,99 +235,30 @@
             container.innerHTML = '';
             try {
                 const response = await fetch(`/api/chat/${sessionId}/messages`);
-                if (!response.ok) throw new Error("Failed to load pipeline message layers.");
                 const messages = await response.json();
-                
                 if (messages.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-xs #6c7086 py-12" id="empty-state">
-                            Active session context initialized. Awaiting user ingress instruction stack.
-                        </div>
-                    `;
+                    container.innerHTML = `<div class="text-center text-xs text-[#6c7086] py-12">Active session context initialized.</div>`;
                     return;
                 }
-
-                messages.forEach(msg => {
-                    appendMessageBubble(msg.role, msg.content);
-                });
-                scrollTerminalToBottom();
+                messages.forEach(msg => appendMessageBubble(msg.role, msg.content));
+                container.scrollTop = container.scrollHeight;
             } catch (err) {
                 console.error("[HYDRATION-FAILURE]", err);
-                container.innerHTML = `<div class="p-4 bg-[#f38ba8]/10 text-[#f38ba8] rounded-lg text-xs">Error during channel sync.</div>`;
             }
         }
 
         function appendMessageBubble(role, content) {
             const container = document.getElementById("chat-messages");
-            const emptyState = document.getElementById("empty-state");
-            if (emptyState) emptyState.remove();
-
             const wrapper = document.createElement("div");
-            wrapper.className = `flex flex-col space-y-1 w-full max-w-3xl ${role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start group'}`;
-            
-            const roleIndicator = role === 'user' ? 'OPERATOR' : 'OWL ENGINE CORE';
-            const roleColor = role === 'user' ? 'text-[#f9e2af]' : 'text-[#a6e3a1]';
+            wrapper.className = `flex flex-col space-y-1 w-full max-w-3xl ${role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`;
             
             if (role === 'user') {
-                wrapper.innerHTML = `
-                    <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
-                    <div class="bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none py-3 px-4 shadow-md max-w-full break-words text-sm">${escapeHtml(content)}</div>
-                `;
+                wrapper.innerHTML = `<div class="bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none py-3 px-4 shadow text-sm">${content}</div>`;
             } else {
-                const parsedContent = marked.parse(content);
-                wrapper.innerHTML = `
-                    <div class="flex items-center justify-between w-full mb-0.5 px-1">
-                        <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
-                        <button onclick="copyCodeContents(this)" class="text-[10px] bg-[#1e1e2e] hover:bg-[#313244] border border-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] px-2 py-0.5 rounded transition flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-sm">
-                            <i class="fas fa-copy text-[9px]"></i> <span>Copy Code</span>
-                        </button>
-                    </div>
-                    <div class="bg-[#181825] text-[#cdd6f4] border border-[#313244] rounded-2xl rounded-tl-none font-sans text-sm leading-relaxed py-3 px-4 shadow-md relative w-full prose prose-invert max-w-none">
-                        ${parsedContent}
-                    </div>
-                `;
-                
-                wrapper.querySelectorAll('pre code').forEach((el) => {
-                    hljs.highlightElement(el);
-                    el.parentElement.className = "bg-[#11111b] p-4 rounded-lg my-3 overflow-x-auto font-mono text-xs border border-[#313244]";
-                });
+                wrapper.innerHTML = `<div class="bg-[#181825] text-[#cdd6f4] border border-[#313244] rounded-2xl rounded-tl-none py-3 px-4 shadow text-sm w-full">${marked.parse(content)}</div>`;
+                wrapper.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
             }
-
             container.appendChild(wrapper);
-            scrollTerminalToBottom();
-            return wrapper;
-        }
-
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, (m) => map[m]);
-        }
-
-        function scrollTerminalToBottom() {
-            const container = document.getElementById("chat-messages");
-            container.scrollTop = container.scrollHeight;
-        }
-
-        async function copyCodeContents(buttonElement) {
-            const codeBlock = buttonElement.closest('.group').querySelector('pre code');
-            if (!codeBlock) return;
-            
-            const rawTextContent = codeBlock.textContent;
-            try {
-                await navigator.clipboard.writeText(rawTextContent);
-                const label = buttonElement.querySelector('span');
-                const icon = buttonElement.querySelector('i');
-                
-                label.textContent = "Copied!";
-                icon.className = "fas fa-check text-[#a6e3a1] text-[9px]";
-                
-                setTimeout(() => {
-                    label.textContent = "Copy Code";
-                    icon.className = "fas fa-copy text-[9px]";
-                }, 2000);
-            } catch (err) {
-                console.error("[CLIPBOARD-ERROR] Copy execution failed:", err);
-            }
         }
     </script>
 </body>
