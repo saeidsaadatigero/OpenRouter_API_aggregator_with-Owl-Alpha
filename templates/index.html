@@ -6,7 +6,9 @@
     <title>OpenRouter Studio Client</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Highlight.js Base Stylesheet (Using Tokyo Night / Dark style that perfectly blends with Catppuccin Mocha) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
+    <!-- Markdown and Highlight Engines Integration -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <style>
@@ -73,7 +75,7 @@
                     <span id="session-text-{{ chat.id }}">{{ chat.title or 'Untitled Operational Pipeline' }}</span>
                 </a>
                 <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    <button onclick="triggerRenamePipeline({{ chat.id }}, '{{ chat.title or '' }}')" class="text-[#a6adc8] hover:text-[#f9e2af] p-1 transition" title="Rename Session">
+                    <button onclick="triggerRenamePipeline({{ chat.id }})" class="text-[#a6adc8] hover:text-[#f9e2af] p-1 transition" title="Rename Session">
                         <i class="fas fa-edit text-xs"></i>
                     </button>
                     <button onclick="triggerDeletePipeline({{ chat.id }})" class="text-[#a6adc8] hover:text-[#f38ba8] p-1 transition" title="Delete Session">
@@ -152,6 +154,65 @@
             }
         });
 
+        // Initialize new active operational session context
+        async function createNewSession() {
+            try {
+                const response = await fetch('/api/chat/session', { method: 'POST' });
+                if (!response.ok) throw new Error("Backend synchronization failure during creation.");
+                const data = await response.json();
+                window.location.href = `/chat/${data.id}`;
+            } catch (err) {
+                console.error("[SESSION-CREATION-FAILURE]", err);
+                alert("Critical error initializing new operational pipeline session.");
+            }
+        }
+
+        // Trigger asynchronous mutation layer for renaming sessions
+        async function triggerRenamePipeline(chatId) {
+            const titleSpan = document.getElementById(`session-text-${chatId}`);
+            const currentTitle = titleSpan ? titleSpan.textContent.trim() : "";
+            const newTitle = prompt("Enter new structural title for this pipeline session:", currentTitle);
+            
+            if (!newTitle || newTitle.trim() === "" || newTitle.trim() === currentTitle) return;
+
+            try {
+                const response = await fetch(`/api/chat/${chatId}/rename`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle.trim() })
+                });
+
+                if (!response.ok) throw new Error("Failed to persist renamed structural token.");
+                
+                if (titleSpan) {
+                    titleSpan.textContent = newTitle.trim();
+                }
+            } catch (err) {
+                console.error("[RENAME-FAILURE]", err);
+                alert("Error updating pipeline title execution layer.");
+            }
+        }
+
+        // Trigger network call to purge historical session components
+        async function triggerDeletePipeline(chatId) {
+            if (!confirm("Are you sure you want to terminate this operational pipeline session context?")) return;
+
+            try {
+                const response = await fetch(`/api/chat/${chatId}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error("Failed to purge pipeline session from DB storage.");
+
+                const item = document.getElementById(`session-item-${chatId}`);
+                if (item) item.remove();
+
+                if (activeSessionId == chatId) {
+                    window.location.href = '/';
+                }
+            } catch (err) {
+                console.error("[DELETE-FAILURE]", err);
+                alert("Error purging historical operational pipeline layer.");
+            }
+        }
+
         async function hydrateExistingMessages(sessionId) {
             const container = document.getElementById("chat-messages");
             container.innerHTML = '';
@@ -196,7 +257,6 @@
                     <div class="bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none py-3 px-4 shadow-md max-w-full break-words text-sm">${escapeHtml(content)}</div>
                 `;
             } else {
-                // Parse markdown content dynamically for LLM responses
                 const parsedContent = marked.parse(content);
                 wrapper.innerHTML = `
                     <div class="flex items-center justify-between w-full mb-0.5 px-1">
@@ -210,10 +270,8 @@
                     </div>
                 `;
                 
-                // Trigger highlight mapping on newly injected structural DOM elements
                 wrapper.querySelectorAll('pre code').forEach((el) => {
                     hljs.highlightElement(el);
-                    // Append premium wrapper design to inner pre tags
                     el.parentElement.className = "bg-[#11111b] p-4 rounded-lg my-3 overflow-x-auto font-mono text-xs border border-[#313244]";
                 });
             }
