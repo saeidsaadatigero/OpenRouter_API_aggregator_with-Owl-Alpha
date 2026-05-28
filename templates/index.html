@@ -1,336 +1,172 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenRouter Agent Studio</title>
+    <title>🌌 Agentic Code Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { background-color: #0b0f19; color: #e2e8f0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased selection:bg-cyan-500 selection:text-slate-900">
-    
-    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+<body class="h-screen w-screen flex overflow-hidden">
 
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex items-center justify-between shadow-xl">
-        <div class="flex items-center space-x-3">
-            <div class="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2 rounded-xl text-slate-900 shadow-lg shadow-cyan-500/20">
-                <i class="fa-solid fa-brain text-xl font-black"></i>
+    <aside class="w-80 bg-[#0f172a] border-r border-[#1e293b] flex flex-col justify-between shrink-0">
+        <div class="p-4 flex flex-col h-full overflow-hidden">
+            <div class="flex items-center justify-between mb-6">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-bold text-lg tracking-wider">AGENTIC STUDIO</span>
             </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-tight text-white">Agentic Code Studio</h1>
-                <p class="text-xs text-slate-400">Powered by OpenRouter Owl-Alpha Engine</p>
+            
+            <button onclick="createNewChatSession()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl mb-6 shadow-lg shadow-purple-900/30 transition duration-200 flex items-center justify-center gap-2">
+                <span>➕</span> New Chat
+            </button>
+
+            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 px-1">Recent Conversational Threads</h3>
+            <div class="flex-1 overflow-y-auto space-y-1 pr-1">
+                {% for chat in recent_chats %}
+                <a href="/chat/{{ chat.id }}" class="block px-3 py-2.5 rounded-xl text-sm transition text-slate-300 hover:bg-[#1e293b]/50 hover:text-white truncate {% if active_session_id == chat.id %}bg-purple-950/40 text-purple-300 border border-purple-800/40{% endif %}">
+                    💬 {{ chat.title }}
+                </a>
+                {% else %}
+                <p class="text-xs text-slate-600 px-2 italic">No context logs found.</p>
+                {% endfor %}
             </div>
         </div>
-        <div class="flex items-center space-x-2 bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-400">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Engine Status: Production
+        <div class="p-4 border-t border-[#1e293b] bg-[#090d16] text-center text-xs text-slate-500">
+            PROD Mode Operational Cluster
         </div>
-    </header>
+    </aside>
 
-    <main class="flex-1 flex overflow-hidden">
-        <section class="w-1/3 min-w-[320px] border-r border-slate-800 p-6 flex flex-col justify-between bg-slate-900/20 overflow-y-auto">
-            <form id="generationForm" class="space-y-6">
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Target Component Filepath</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"><i class="fa-solid fa-file-code"></i></span>
-                        <input type="text" id="filename" name="filename" required placeholder="e.g., trading/order_book.py"
-                               class="w-full pl-10 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-600 transition font-mono text-sm shadow-inner"
-                               maxlength="255">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Prompt Specification</label>
-                    <textarea id="prompt" name="prompt" required rows="6" placeholder="Describe the structural OOP component you want to compile..."
-                              class="w-full p-4 bg-slate-950/80 border border-slate-800 rounded-xl focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-600 transition text-sm shadow-inner resize-none"
-                              maxlength="5000"></textarea>
-                    <div class="text-right text-xs text-slate-500 mt-1">
-                        <span id="charCount">0</span>/5000
-                    </div>
-                </div>
-                <button type="submit" id="submitBtn"
-                        class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-cyan-500/10 flex items-center justify-center space-x-2 group disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span id="btnText">Compile Architecture</span>
-                    <i id="btnIcon" class="fa-solid fa-bolt transition group-hover:scale-110"></i>
-                </button>
-            </form>
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-[#070a12]">
+        
+        <header class="h-16 border-b border-[#1e293b] flex items-center justify-between px-6 bg-[#0f172a]/40 backdrop-blur">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs tracking-wider uppercase text-slate-400">Target Session Vector Cluster: </span>
+                <span id="session-display-id" class="text-xs text-purple-400 font-bold">{{ active_session_id if active_session_id else 'None selected (Establish Session Link)' }}</span>
+            </div>
+        </header>
 
-            <div id="loaderState" class="hidden mt-6 p-4 bg-slate-950/50 border border-cyan-500/20 rounded-xl flex-col">
-                <div class="flex items-center space-x-4">
-                    <i class="fa-solid fa-circle-notch text-cyan-400 animate-spin text-xl"></i>
-                    <div class="text-xs font-mono text-slate-300 flex-1">
-                        <p class="font-bold text-cyan-400">Streaming Pipeline...</p>
-                        <p class="text-slate-500 text-[11px]">Consuming upstream AI compilation nodes.</p>
-                    </div>
+        <section id="chat-scroller" class="flex-1 overflow-y-auto p-6 space-y-4">
+            {% if not active_session_id %}
+            <div class="h-full flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-4">
+                <div class="p-4 bg-purple-950/20 rounded-full text-purple-400 text-3xl">🌌</div>
+                <h2 class="text-lg font-bold text-slate-200">Asynchronous Engineering Playground</h2>
+                <p class="text-sm text-slate-500 leading-relaxed">Establish a clean transactional vector link by initializing a <b>New Chat</b> or choosing an execution pipeline context on the historical trace sidebar.</p>
+            </div>
+            {% else %}
+                {% for message in messages %}
+                <div class="flex flex-col p-4 rounded-2xl max-w-[85%] {% if message.role == 'user' %} bg-purple-950/20 border border-purple-900/30 text-slate-200 ml-auto {% else %} bg-[#0f172a] border border-[#1e293b] text-cyan-400 mr-auto {% endif %}">
+                    <span class="text-[10px] font-bold tracking-widest uppercase mb-1 block {% if message.role == 'user' %} text-purple-400 {% else %} text-cyan-500 {% endif %}">{{ message.role }}</span>
                 </div>
-                <div class="mt-3 space-y-2">
-                    <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full animate-pulse" style="width: 100%"></div>
-                    </div>
-                </div>
-                <button type="button" id="abortBtn" class="mt-4 w-full bg-red-950/40 hover:bg-red-900/40 border border-red-800/60 text-red-400 text-xs font-mono py-2.5 rounded-xl transition duration-200 flex items-center justify-center space-x-2 group">
-                    <i class="fa-solid fa-ban group-hover:animate-spin"></i>
-                    <span class="font-bold uppercase tracking-wider">Abort Pipeline Generation</span>
-                </button>
+                {% endfor %}
+            {% endif %}
+            <div id="live-stream-target" class="hidden flex flex-col p-4 rounded-2xl max-w-[85%] bg-[#0f172a] border border-[#1e293b] text-cyan-400 mr-auto">
+                <span class="text-[10px] font-bold tracking-widest uppercase text-cyan-500 mb-1 block">assistant (streaming)</span>
+                <pre id="stream-buffer" class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-cyan-300"></pre>
             </div>
         </section>
 
-        <section class="flex-1 flex flex-col overflow-hidden bg-slate-950">
-            <div class="border-b border-slate-800/80 bg-slate-900/10 px-6 py-3 flex items-center justify-between">
-                <div class="text-xs font-mono text-slate-400 flex items-center space-x-2">
-                    <i class="fa-solid fa-clock-history"></i> <span>Workspace Logs</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span id="codeStats" class="text-xs text-slate-500 font-mono hidden">
-                        <span id="lineCount">0</span> lines
-                    </span>
-                    <button id="copyBtn" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
-                        <i class="fa-regular fa-copy"></i> <span>Copy Raw Buffer</span>
+        <footer class="p-4 border-t border-[#1e293b] bg-[#0f172a]/30 backdrop-blur">
+            <form id="generation-form" onsubmit="executeGenerationPipeline(event)" class="max-w-4xl mx-auto space-y-3">
+                <div class="flex gap-3">
+                    <input type="text" id="filename-input" placeholder="Output target filename components (e.g., core_logic.py)" required class="w-1/3 bg-[#090d16] border border-[#1e293b] focus:border-purple-500 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-200 outline-none transition" />
+                    <button type="submit" {% if not active_session_id %} disabled class="opacity-40 cursor-not-allowed bg-slate-800 text-slate-400 px-6 rounded-xl font-medium text-sm shrink-0" {% else %} class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-6 rounded-xl font-medium text-sm text-white transition duration-200 shadow-md shadow-purple-900/20 shrink-0" {% endif %}>
+                        Compile Stack ⚡
                     </button>
                 </div>
-            </div>
-
-            <div class="flex-1 flex overflow-hidden">
-                <div class="w-2/5 min-w-[280px] border-r border-slate-800/60 overflow-y-auto p-4 space-y-3" id="historyContainer">
-                    {% for item in history %}
-                    <div data-id="{{ item.id }}" id="card-{{ item.id }}"
-                         class="history-card p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition relative group shadow-sm">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-mono text-cyan-400 truncate max-w-[180px]"><i class="fa-solid fa-file-invoice-dollar text-slate-500 mr-1"></i>{{ item.filename }}</span>
-                            <span class="text-[10px] text-slate-500 font-mono">{{ item.created_at.strftime('%m/%d %H:%M') }}</span>
-                        </div>
-                        <p class="text-xs text-slate-300 line-clamp-2 pr-4 font-sans">{{ item.prompt }}</p>
-                        <textarea class="hidden" id="raw-{{ item.id }}">{{ item.generated_code }}</textarea>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <div class="flex-1 bg-slate-950 overflow-y-auto">
-                    <div class="flex min-h-full">
-                        <div class="py-6 px-2 text-right select-none border-r border-slate-800/40" id="lineNumbers">
-                            <span class="text-xs font-mono text-slate-600 leading-relaxed block">1</span>
-                        </div>
-                        <pre class="flex-1 p-6"><code id="codeDisplay" class="text-sm font-mono text-emerald-400 leading-relaxed block whitespace-pre-wrap">Select an enterprise architecture workflow from the left trace stack or compile a new model to view logs.</code></pre>
-                    </div>
-                </div>
-            </div>
-        </section>
+                <textarea id="prompt-input" rows="3" placeholder="Input execution specifications or iterative modification architecture prompts..." required {% if not active_session_id %} disabled {% endif %} class="w-full bg-[#090d16] border border-[#1e293b] focus:border-purple-500 rounded-xl p-4 text-sm font-mono text-slate-200 outline-none transition resize-none"></textarea>
+            </form>
+        </footer>
     </main>
 
     <script>
-        const form = document.getElementById('generationForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const loaderState = document.getElementById('loaderState');
-        const abortBtn = document.getElementById('abortBtn');
-        const historyContainer = document.getElementById('historyContainer');
-        const codeDisplay = document.getElementById('codeDisplay');
-        const copyBtn = document.getElementById('copyBtn');
-        const promptInput = document.getElementById('prompt');
-        const charCount = document.getElementById('charCount');
-        const lineNumbers = document.getElementById('lineNumbers');
-        const codeStats = document.getElementById('codeStats');
-        const lineCountSpan = document.getElementById('lineCount');
-        const toastContainer = document.getElementById('toastContainer');
+        const activeSessionId = "{{ active_session_id if active_session_id else '' }}";
 
-        let currentActiveBuffer = "";
-        let streamAbortController = null; // Active network stream killer state reference
-
-        function showToast(message, type = 'error') {
-            const toast = document.createElement('div');
-            const bgColor = type === 'error' ? 'bg-red-500/90' : 'bg-emerald-500/90';
-            const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
-            
-            toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 transform transition-all duration-300 translate-x-full`;
-            toast.innerHTML = `
-                <i class="fa-solid ${icon}"></i>
-                <span class="text-sm font-medium">${message}</span>
-            `;
-            
-            toastContainer.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
-            
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        promptInput.addEventListener('input', () => {
-            charCount.textContent = promptInput.value.length;
-        });
-
-        function updateLineNumbers() {
-            const text = codeDisplay.textContent;
-            const lines = text.split('\n').length;
-            lineCountSpan.textContent = lines;
-            codeStats.classList.remove('hidden');
-            
-            let html = '';
-            for (let i = 1; i <= lines; i++) {
-                html += `<span class="text-xs font-mono text-slate-600 leading-relaxed block">${i}</span>`;
-            }
-            lineNumbers.innerHTML = html;
-        }
-
-        // Interruption Event Bind Handler
-        abortBtn.addEventListener('click', () => {
-            if (streamAbortController) {
-                streamAbortController.abort();
-                logger.info("[UI] User hit termination button. Dispatching abort signal vector.");
-            }
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const filename = document.getElementById('filename').value.trim();
-            const prompt = promptInput.value.trim();
-            
-            if (!filename || !prompt) {
-                showToast('Please fill in all required fields.');
-                return;
-            }
-            
-            // Instantiating fresh cancel core engine handle
-            streamAbortController = new AbortController();
-            const { signal } = streamAbortController;
-            
-            submitBtn.disabled = true;
-            loaderState.classList.remove('hidden');
-            loaderState.classList.add('flex');
-            
-            // Clear current screen layout to trace live streaming chunks
-            codeDisplay.textContent = "";
-            currentActiveBuffer = "";
-
-            const formData = new FormData(form);
-            
+        async function createNewChatSession() {
             try {
-                const response = await fetch('/api/generate', { 
-                    method: 'POST', 
-                    body: formData,
-                    signal: signal
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Server network failure with state: ${response.status}`);
+                const response = await fetch('/api/chat/new', { method: 'POST' });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    window.location.href = `/chat/${data.session_id}`;
                 }
+            } catch (err) {
+                console.error("Critical failure during instantiation of session container mapping:", err);
+            }
+        }
 
-                // Processing reader stream buffer chunks
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder("utf-8");
-                let textBuffer = "";
+        function executeGenerationPipeline(event) {
+            event.preventDefault();
+            if (!activeSessionId) return;
 
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
+            const promptInput = document.getElementById('prompt-input');
+            const filenameInput = document.getElementById('filename-input');
+            const streamTarget = document.getElementById('live-stream-target');
+            const streamBuffer = document.getElementById('stream-buffer');
+            const chatScroller = document.getElementById('chat-scroller');
 
-                    textBuffer += decoder.decode(value, { stream: true });
-                    const lines = textBuffer.split("\n");
-                    textBuffer = lines.pop(); // Hold onto partial line structures
+            const prompt = promptInput.value;
+            const filename = filenameInput.value;
 
-                    for (const line of lines) {
-                        if (line.startsWith("data: ")) {
-                            const rawJson = line.slice(6).trim();
-                            if (!rawJson) continue;
+            // Render local user message instantly inside UI loop framework before network socket initialization
+            const userBubble = document.createElement('div');
+            userBubble.className = "flex flex-col p-4 rounded-2xl max-w-[85%] bg-purple-950/20 border border-purple-900/30 text-slate-200 ml-auto";
+            userBubble.innerHTML = `<span class="text-[10px] font-bold tracking-widest uppercase text-purple-400 mb-1 block">user</span><pre class="whitespace-pre-wrap font-mono text-sm leading-relaxed">${prompt}</pre>`;
+            chatScroller.insertBefore(userBubble, streamTarget);
+            
+            // Re-adjust scrolling offset bounds seamlessly
+            chatScroller.scrollTop = chatScroller.scrollHeight;
 
-                            try {
-                                const payload = JSON.parse(rawJson);
-                                
-                                if (payload.type === "token") {
-                                    // Append live source engine data chunks straight to the UI
-                                    codeDisplay.textContent += payload.content;
-                                    currentActiveBuffer = codeDisplay.textContent;
-                                    updateLineNumbers();
-                                } 
-                                else if (payload.type === "final") {
-                                    // Injecting history entry stack frame securely
-                                    const freshCard = document.createElement('div');
-                                    freshCard.id = `card-${payload.id}`;
-                                    freshCard.dataset.id = payload.id;
-                                    freshCard.className = "history-card p-4 bg-slate-900/40 border border-cyan-500/40 rounded-xl cursor-pointer transition relative group shadow-sm";
-                                    freshCard.innerHTML = `
-                                        <div class="flex justify-between items-start mb-2">
-                                            <span class="text-xs font-mono text-cyan-400 truncate max-w-[180px]"><i class="fa-solid fa-file-invoice-dollar text-slate-500 mr-1"></i>${escapeHtml(payload.filename)}</span>
-                                            <span class="text-[10px] text-slate-500 font-mono">Just Now</span>
-                                        </div>
-                                        <p class="text-xs text-slate-300 line-clamp-2 pr-4 font-sans">${escapeHtml(payload.prompt)}</p>
-                                        <textarea class="hidden" id="raw-${payload.id}">${escapeHtml(payload.generated_code)}</textarea>
-                                    `;
-                                    
-                                    freshCard.addEventListener('click', () => displayCode(payload.id));
-                                    historyContainer.insertBefore(freshCard, historyContainer.firstChild);
-                                    
-                                    form.reset();
-                                    charCount.textContent = '0';
-                                    showToast('Component successfully generated and saved to isolated workspace sandbox!', 'success');
-                                } 
-                                else if (payload.type === "error") {
-                                    showToast(payload.detail);
-                                }
-                            } catch (err) {
-                                // Mute parsing fragmentation errors during continuous stream steps
+            // Reset stream overlay status indicators
+            streamBuffer.innerText = "";
+            streamTarget.classList.remove('hidden');
+            promptInput.value = "";
+
+            // Initialize Form Multi-part standard payload encoding constraints
+            const bodyForm = new FormData();
+            bodyForm.append('prompt', prompt);
+            bodyForm.append('filename', filename);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `/api/chat/${activeSessionId}/generate`, true);
+            
+            let lastIdx = 0;
+            xhr.onprogress = function() {
+                const rawChunks = xhr.responseText.substring(lastIdx);
+                lastIdx = xhr.responseText.length;
+
+                const lines = rawChunks.split('\n');
+                lines.forEach(line => {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const rawJson = line.substring(6).trim();
+                            if (!rawJson) return;
+                            const payload = JSON.parse(rawJson);
+                            
+                            if (payload.type === 'token') {
+                                streamBuffer.innerText += payload.content;
+                                chatScroller.scrollTop = chatScroller.scrollHeight;
+                            } else if (payload.type === 'final') {
+                                window.location.reload();
+                            } else if (payload.type === 'error') {
+                                alert(`Pipeline Breakout: ${payload.detail}`);
                             }
+                        } catch(e) {
+                            // Suppress incremental framing artifacts silently
                         }
                     }
-                }
-            } catch (err) {
-                if (err.name === 'AbortError') {
-                    showToast('Transmission stream processing aborted cleanly by developer.', 'error');
-                } else {
-                    showToast('Pipeline communication fault: ' + err.message);
-                }
-            } finally {
-                submitBtn.disabled = false;
-                loaderState.classList.add('hidden');
-                loaderState.classList.remove('flex');
-                streamAbortController = null;
-            }
-        });
+                });
+            };
 
-        function displayCode(id) {
-            document.querySelectorAll('.history-card').forEach(c => {
-                c.classList.remove('border-cyan-500/50', 'bg-slate-900/80');
-            });
-            
-            const selectedCard = document.getElementById(`card-${id}`);
-            if (selectedCard) {
-                selectedCard.classList.add('border-cyan-500/50', 'bg-slate-900/80');
-            }
-            
-            const rawCode = document.getElementById(`raw-${id}`).value;
-            codeDisplay.textContent = rawCode;
-            currentActiveBuffer = rawCode;
-            updateLineNumbers();
-        }
+            xhr.onerror = function() {
+                alert("Critical network link termination detected inside ASGI channel infrastructure.");
+            };
 
-        document.querySelectorAll('.history-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const id = card.dataset.id;
-                if (id) displayCode(id);
-            });
-        });
-
-        copyBtn.addEventListener('click', async () => {
-            if (!currentActiveBuffer) {
-                showToast('No code to copy. Generate or select code first.');
-                return;
-            }
-            try {
-                await navigator.clipboard.writeText(currentActiveBuffer);
-                copyBtn.innerHTML = "<i class='fa-solid fa-check text-emerald-400'></i> <span class='text-emerald-400'>Copied!</span>";
-                setTimeout(() => {
-                    copyBtn.innerHTML = "<i class='fa-regular fa-copy'></i> <span>Copy Raw Buffer</span>";
-                }, 2000);
-            } catch (err) {
-                showToast('Failed to copy to clipboard');
-            }
-        });
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            xhr.send(bodyForm);
         }
     </script>
 </body>

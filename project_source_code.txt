@@ -1,0 +1,1379 @@
+
+============================================================
+FILE: .env
+============================================================
+
+OPENROUTER_API_KEY=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
+MAX_CONTEXT_TOKENS=16000
+
+============================================================
+FILE: README.md
+============================================================
+
+<img width="1919" height="905" alt="Screenshot 2026-05-28 142709" src="https://github.com/user-attachments/assets/11598ca5-b820-4a18-ac19-7f521b01fc2f" />
+
+<div align="center">
+
+# 🌌 Agentic Code Studio
+### *Next-Gen Asynchronous Enterprise Code Generation Engine*
+
+[![FastAPI Engine](https://img.shields.io/badge/FastAPI-0.136.3-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLAlchemy ORM](https://img.shields.io/badge/SQLAlchemy-2.0.50-C11921?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
+[![Uvicorn ASGI](https://img.shields.io/badge/Uvicorn-0.48.0-494949?style=for-the-badge&logo=gunicorn&logoColor=white)](https://www.uvicorn.org)
+[![Tailwind CSS UI](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![Model Engine](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge&logo=openai&logoColor=white)](https://openrouter.ai)
+
+<p align="center">
+  A high-performance, asynchronous code-scaffolding and generation studio leveraging OpenRouter clusters. Featuring real-time Server-Sent Events (SSE) streaming, deep multi-layer pipeline validation, path-traversal security sandboxing, and persistent relational transaction logging.
+</p>
+
+[✨ Core Features](#-core-features) • [🏗️ Architecture Blueprint](#%EF%B8%8F-architecture-blueprint) • [🚀 Quickstart Pipeline](#-quickstart-pipeline) • [📁 System Directory Layout](#-system-directory-layout)
+
+---
+</div>
+
+## ✨ Core Features
+
+* **⚡ Real-Time SSE Token Streaming**: Asynchronous data chunk consumption from upstream OpenRouter macro context nodes directly down to the browser layout without blocking execution threads.
+* **🛡️ Secure Workspace Sandboxing**: Structural filename scanning (`..`, `/`, `~` extraction mitigation) with target base directory lockouts preventing server-side path traversal escapes.
+* **🔌 Active Network Circuit Breaking**: Intercepts client connection state (`request.is_disconnected()`) and triggers a safe pipeline termination routine to save upstream token costs.
+* **📊 Relational Audit Trailing**: Automatic schema mapping via SQLAlchemy ORM into an optimized SQLite tracking ledger capturing prompt contexts and full source-code payloads.
+* **🎨 Cyberpunk Dark-Mode UI**: Immersive high-contrast interface built with premium utility-first components, interactive live character bounds, dynamic visual line-counters, and instant clipboard buffers.
+
+---
+
+## 🏗️ Architecture Blueprint
+
+The ecosystem adheres to a strict decoupled architectural flow, separating network routing, business logic orchestration, and relational data layers:
+
+```mermaid
+graph TD
+    Client[🎨 Client Browser View] -->|POST Form Data| Ingress[🛑 FastAPI Guard /main.py]
+    Ingress -->|Sanitization & Length Check| Service[⚙️ OpenRouterCodingService /services]
+    Service -->|Async Multiplex Sockets| Upstream((🧠 OpenRouter Owl Cluster))
+    Upstream -->|Token Chunk Stream| Service
+    Service -->|Yield SSE Lines| Client
+    Service -->|Concurrent Flush| Storage[(💾 SQLite DB / Database Layer)]
+    Service -->|Isolated IO Flush| Sandbox[📂 generated_components/ Sandbox]
+
+```
+
+---
+
+## 🛠️ Technical Matrix Stack
+
+| Architectural Layer | Technology Stack Component | Role Description |
+| --- | --- | --- |
+| **Asynchronous Web Core** | FastAPI + Uvicorn ASGI | Non-blocking network gateway router and schema validation compiler. |
+| **LLM Orchestration** | AsyncOpenAI Engine Client | Concurrent pipeline socket streaming wrapper tuned for OpenRouter. |
+| **Persistence Engine** | SQLAlchemy 2.0 + SQLite | Structural execution auditing and multi-model database storage. |
+| **Interface Compositing** | Jinja2 Templates + Tailwind CSS | Dynamic serverside HTML injection paired with a custom dark-mode theme. |
+| **Configuration Guard** | Python Decouple | Isolation of system-wide variables and strict operational boundaries. |
+
+---
+
+## 🚀 Quickstart Pipeline
+
+### 1. Initialize Local Virtual Environment
+
+```bash
+python -m venv venv
+# Windows PowerShell Execution Activation
+.\venv\Scripts\Activate.ps1
+
+```
+
+### 2. Deploy Workspace Dependencies
+
+```bash
+pip install fastapi uvicorn sqlalchemy jinja2 python-decouple openai python-multipart
+
+```
+
+### 3. Inject Runtime Environment Variables
+
+Create a file named `.env` inside the absolute root directory of the repository:
+
+```env
+OPENROUTER_API_KEY=your_secret_openrouter_api_key_token_here
+MAX_PROMPT_LENGTH=15000
+
+```
+
+### 4. Ignite the Production ASGI Web Server
+
+```bash
+python -m uvicorn main:app --reload
+
+```
+
+Once ignited, map your browser routing vector to: `http://127.0.0.1:8000`
+
+---
+
+## 📁 System Directory Layout
+
+```text
+.
+├── 📂 generated_components/   # Isolated code asset output sandbox directory
+├── 📂 services/
+│   └── 📄 openrouter_service.py # Core business layer logic & Async client setup
+├── 📂 static/
+│   └── 📂 css/
+│       └── 📄 style.css       # Custom styles, line counters & dark themes
+├── 📂 templates/
+│   └── 📄 index.html          # Embedded Jinja2 frontend template block
+├── 📄 database.py             # SQLAlchemy configuration & Engine session handlers
+├── 📄 models.py               # Declarative DB schemas (generation_history)
+├── 📄 schemas.py              # Pydantic contract payloads for strict types
+├── 📄 main.py                 # FastAPI application router lifecycle engine
+├── 📄 .env                    # Decoupled local secret key-value repository
+└── 📄 openrouter_studio.db    # Relational SQLite physical file binary
+
+```
+
+---
+
+## 🛡️ Sandbox Security Architecture
+
+> [!IMPORTANT]
+> The generation router strictly guarantees compilation safety by checking all incoming path variables against the base directory runtime path using Python's `Path.resolve()` boundary matching:
+> ```python
+> safe_target_path = (TARGET_BASE_DIR / filename).resolve()
+> if not str(safe_target_path).startswith(str(TARGET_BASE_DIR)):
+>     raise HTTPException(status_code=400, detail="Security sandbox violation.")
+> 
+> ```
+> 
+> 
+
+---
+
+============================================================
+FILE: database.py
+============================================================
+
+# database.py
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+DATABASE_URL = "sqlite:///./openrouter_studio.db"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+============================================================
+FILE: main.py
+============================================================
+
+# main.py
+import os
+import json
+import logging
+from pathlib import Path
+from fastapi import FastAPI, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from decouple import config
+
+import models
+from database import engine, get_db
+from services.openrouter_service import OpenRouterCodingService
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
+
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="OpenRouter Studio Core")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+coder_service = OpenRouterCodingService()
+
+MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
+MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
+ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css'}
+# Dedicated target sandbox directory
+TARGET_BASE_DIR = Path("generated_components").resolve()
+
+
+def validate_filename(filename: str) -> bool:
+    if not filename or len(filename) > MAX_FILENAME_LENGTH:
+        return False
+    if '..' in filename or '~' in filename or filename.startswith('/'):
+        return False
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS and ext != '':
+        return False
+    return True
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index_view(request: Request, db: Session = Depends(get_db)):
+    history = db.query(models.GenerationHistory).order_by(
+        models.GenerationHistory.created_at.desc()
+    ).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"history": history}
+    )
+
+
+@app.post("/api/generate")
+async def handle_generation(
+    request: Request,
+    prompt: str = Form(...),
+    filename: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"[INGRESS] Received code generation event interceptor for output component: {filename}")
+    
+    # Pre-flight validations
+    if not prompt.strip() or not filename.strip():
+        logger.warning("[VALIDATION] Intercepted empty required arguments.")
+        raise HTTPException(status_code=400, detail="Required fields are empty.")
+    
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        logger.warning(f"[VALIDATION] Prompt length boundary limit exceeded: {len(prompt)} chars.")
+        raise HTTPException(status_code=400, detail="Prompt exceeds maximum length threshold.")
+    
+    if not validate_filename(filename):
+        logger.warning(f"[SECURITY] Filename failed validation structural analysis: {filename}")
+        raise HTTPException(status_code=400, detail="Invalid filename format or extension.")
+
+    # Enforce standard file extension if missing
+    if not Path(filename).suffix:
+        filename = f"{filename}.py"
+
+    async def event_generator():
+        accumulated_chunks = []
+        try:
+            stream = coder_service.generate_code_stream(prompt)
+            
+            async for token in stream:
+                # Active verification of client lifecycle network link
+                if await request.is_disconnected():
+                    logger.warning(f"[ABORT] Client link severed. Terminating processing thread safely for: {filename}")
+                    return
+
+                accumulated_chunks.append(token)
+                # Yield payload conforming to SSE line standard
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            
+            full_source_code = "".join(accumulated_chunks)
+            if not full_source_code.strip():
+                logger.error("[PIPELINE] Generation terminal finished but returned empty buffer string.")
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Zero tokens compiled from remote node.'})}\n\n"
+                return
+
+            # Compute safe explicit target subfolder sandbox path
+            safe_target_path = (TARGET_BASE_DIR / filename).resolve()
+            if not str(safe_target_path).startswith(str(TARGET_BASE_DIR)):
+                logger.error(f"[SECURITY] Path traversal escape routine triggered and intercepted: {filename}")
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Security sandbox violation.'})}\n\n"
+                return
+
+            # Write assets inside separate folder structure
+            logger.info(f"[IO-WRITE] Flushing memory buffer pipeline to disk: {safe_target_path}")
+            os.makedirs(safe_target_path.parent, exist_ok=True)
+            with open(safe_target_path, "w", encoding="utf-8") as file_handle:
+                file_handle.write(full_source_code)
+
+            # Persist tracking history meta log inside relational database
+            logger.info("[DATABASE-TX] Committing generation audit records to storage schema.")
+            history_entry = models.GenerationHistory(
+                prompt=prompt[:500],
+                generated_code=full_source_code,
+                filename=filename
+            )
+            db.add(history_entry)
+            db.commit()
+            db.refresh(history_entry)
+            
+            logger.info(f"[SUCCESS] Core transaction finalized. Node record tracking index ID: {history_entry.id}")
+            
+            # Send completion block metadata payload to frontend
+            payload = {
+                'type': 'final',
+                'id': history_entry.id,
+                'prompt': history_entry.prompt,
+                'filename': history_entry.filename,
+                'generated_code': history_entry.generated_code,
+                'created_at': history_entry.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
+
+        except Exception as crash_exception:
+            db.rollback()
+            logger.error(f"[CRITICAL-FAILURE] Subroutine exception stack trace: {str(crash_exception)}")
+            yield f"data: {json.dumps({'type': 'error', 'detail': f'Runtime breakdown: {str(crash_exception)}'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+============================================================
+FILE: models.py
+============================================================
+
+# models.py
+from sqlalchemy import Column, Integer, String, Text, DateTime
+from datetime import datetime
+from database import Base
+
+class GenerationHistory(Base):
+    __tablename__ = "generation_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    prompt = Column(String(500), nullable=False)
+    generated_code = Column(Text, nullable=False)
+    filename = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+============================================================
+FILE: save.py
+============================================================
+
+# save.py
+import os
+
+def save_project_structure(output_file="project_source_code.txt"):
+    # پوشه‌هایی که به هیچ وجه نباید واردشان شد (لاگ‌ها، دیتابیس‌ها و محیط‌های مجازی)
+    excluded_dirs = {'venv', '*.db', '.venv', '__pycache__', '.git', 'logs', 'data', '.vscode'}
+    
+    # فقط این فرمت‌ها به عنوان سورس کد شناخته و ذخیره می‌شوند
+    allowed_exts = {'.py', '.json', '.md', '.env'}
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for root, dirs, files in os.walk('.'):
+            # حذف پوشه‌های نامطلوب از جستجو
+            dirs[:] = [d for d in dirs if d not in excluded_dirs and not d.startswith('.')]
+            
+            for file in sorted(files):
+                # بررسی اینکه آیا فایل پسوند مجاز دارد یا دقیقاً فایل .env است
+                if any(file.endswith(ext) for ext in allowed_exts) or file == '.env':
+                    filepath = os.path.join(root, file)
+                    rel_path = os.path.relpath(filepath)
+                    
+                    f.write(f"\n{'='*60}\n")
+                    f.write(f"FILE: {rel_path}\n")
+                    f.write(f"{'='*60}\n\n")
+                    
+                    try:
+                        with open(filepath, 'r', encoding='utf-8', errors='ignore') as content_file:
+                            content = content_file.read()
+                            f.write(content)
+                            if not content.endswith('\n'):
+                                f.write('\n')
+                    except Exception as e:
+                        f.write(f"[Error reading file: {e}]\n")
+
+if __name__ == "__main__":
+    save_project_structure()
+    print("✅ Source code backup saved successfully to 'project_source_code.txt'")
+
+============================================================
+FILE: schemas.py
+============================================================
+
+# schemas.py
+from pydantic import BaseModel
+from datetime import datetime
+
+class CodeRequest(BaseModel):
+    prompt: str
+    filename: str
+
+class HistoryResponse(BaseModel):
+    id: int
+    prompt: str
+    generated_code: str
+    filename: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+============================================================
+FILE: db\database_pool.py
+============================================================
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from collections import deque
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from typing import (
+    Any,
+    AsyncGenerator,
+    Deque,
+    Dict,
+    Optional,
+    Set,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Lightweight connection stub — replace with real DB driver (e.g. asyncpg)
+# ---------------------------------------------------------------------------
+
+class _Connection:
+    """Minimal stand-in for a real async database connection.
+
+    In production replace this with ``asyncpg.Connection``,
+    ``aiomysql.Connection``, ``aiosqlite.Connection``, etc.
+    """
+
+    _counter: int = 0
+
+    def __init__(self) -> None:
+        _Connection._counter += 1
+        self._id: int = _Connection._counter
+        self._closed: bool = False
+        self._created_at: float = time.monotonic()
+        logger.debug("Connection #%d created", self._id)
+
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def is_closed(self) -> bool:
+        return self._closed
+
+    async def ping(self) -> bool:
+        """Return ``True`` if the connection is healthy."""
+        await asyncio.sleep(0)  # yield control
+        return not self._closed
+
+    async def close(self) -> None:
+        if not self._closed:
+            self._closed = True
+            logger.debug("Connection #%d closed", self._id)
+
+    async def execute(self, query: str, *args: Any) -> Any:
+        if self._closed:
+            raise ConnectionError(f"Connection #{self._id} is closed")
+        await asyncio.sleep(0)
+        return f"Result of: {query}"
+
+    def __repr__(self) -> str:
+        return f"<_Connection #{self._id} closed={self._closed}>"
+
+
+# ---------------------------------------------------------------------------
+# Pool configuration
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class PoolConfig:
+    """Immutable pool configuration."""
+
+    min_size: int = 2
+    """Minimum number of connections kept open."""
+
+    max_size: int = 10
+    """Maximum number of connections allowed."""
+
+    max_idle_time: float = 300.0
+    """Seconds before an idle connection is recycled."""
+
+    max_lifetime: float = 3600.0
+    """Maximum lifetime of a connection in seconds."""
+
+    acquire_timeout: float = 30.0
+    """Seconds to wait for a connection before raising TimeoutError."""
+
+    health_check_interval: float = 30.0
+    """Interval (seconds) between background health checks."""
+
+    retry_attempts: int = 3
+    """Number of retries when creating a new connection."""
+
+    retry_delay: float = 1.0
+    """Delay in seconds between connection creation retries."""
+
+
+# ---------------------------------------------------------------------------
+# Pooled connection wrapper
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _PooledConnection:
+    """Wraps a raw connection with pool bookkeeping."""
+
+    conn: _Connection
+    created_at: float = field(default_factory=time.monotonic)
+    last_used_at: float = field(default_factory=time.monotonic)
+
+    @property
+    def age(self) -> float:
+        return time.monotonic() - self.created_at
+
+    @property
+    def idle_time(self) -> float:
+        return time.monotonic() - self.last_used_at
+
+    def mark_used(self) -> None:
+        self.last_used_at = time.monotonic()
+
+
+# ---------------------------------------------------------------------------
+# Singleton pool
+# ---------------------------------------------------------------------------
+
+class AsyncConnectionPool:
+    """High-performance singleton async connection pool.
+
+    Usage::
+
+        pool = AsyncConnectionPool.get_instance(
+            config=PoolConfig(min_size=5, max_size=20),
+        )
+        await pool.initialize()
+
+        async with pool.acquire() as conn:
+            result = await conn.execute("SELECT 1")
+
+        await pool.close()
+    """
+
+    _instance: Optional["AsyncConnectionPool"] = None
+    _instance_lock: asyncio.Lock = asyncio.Lock()
+
+    # ------------------------------------------------------------------
+    # Singleton access
+    # ------------------------------------------------------------------
+
+    @classmethod
+    async def get_instance(
+        cls,
+        config: Optional[PoolConfig] = None,
+    ) -> "AsyncConnectionPool":
+        """Return the singleton instance, creating it if necessary.
+
+        This method is async-safe and guarantees that only one pool
+        exists per process.
+        """
+        if cls._instance is not None:
+            return cls._instance
+
+        async with cls._instance_lock:
+            # Double-check after acquiring the lock
+            if cls._instance is not None:
+                return cls._instance
+
+            cfg = config or PoolConfig()
+            instance = cls._new(cfg)
+            cls._instance = instance
+            return instance
+
+    @classmethod
+    def _new(cls, config: PoolConfig) -> "AsyncConnectionPool":
+        """Bypass singleton check — for internal use only."""
+        obj = object.__new__(cls)
+        obj._config = config
+        obj._pool: Deque[_PooledConnection] = deque()
+        obj._in_use: Set[_PooledConnection] = set()
+        obj._semaphore: Optional[asyncio.Semaphore] = None
+        obj._lock = asyncio.Lock()
+        obj._initialized = False
+        obj._closed = False
+        obj._waiters: int = 0
+        obj._total_created: int = 0
+        obj._total_destroyed: int = 0
+        obj._health_check_task: Optional[asyncio.Task[None]] = None
+        return obj
+
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+
+    async def initialize(self) -> None:
+        """Create the minimum number of connections and start background tasks."""
+        if self._initialized:
+            return
+
+        async with self._lock:
+            if self._initialized:
+                return
+
+            self._semaphore = asyncio.Semaphore(self._config.max_size)
+
+            for _ in range(self._config.min_size):
+                pc = await self._create_connection()
+                self._pool.append(pc)
+
+            self._health_check_task = asyncio.create_task(
+                self._health_check_loop(),
+                name="pool-health-check",
+            )
+
+            self._initialized = True
+            logger.info(
+                "Pool initialized with %d/%d connections",
+                len(self._pool),
+                self._config.max_size,
+            )
+
+    async def close(self) -> None:
+        """Close all connections and stop background tasks."""
+        if self._closed:
+            return
+
+        async with self._lock:
+            if self._closed:
+                return
+
+            self._closed = True
+
+            if self._health_check_task is not None:
+                self._health_check_task.cancel()
+                try:
+                    await self._health_check_task
+                except asyncio.CancelledError:
+                    pass
+
+            # Close all idle connections
+            while self._pool:
+                pc = self._pool.popleft()
+                await pc.conn.close()
+                self._total_destroyed += 1
+
+            # Close all in-use connections
+            for pc in list(self._in_use):
+                await pc.conn.close()
+                self._total_destroyed += 1
+            self._in_use.clear()
+
+            self._initialized = False
+            logger.info("Pool closed. Total created: %d, destroyed: %d",
+                        self._total_created, self._total_destroyed)
+
+    # ------------------------------------------------------------------
+    # Acquire / release
+    # ------------------------------------------------------------------
+
+    @asynccontextmanager
+    async def acquire(self) -> AsyncGenerator[_Connection, None]:
+        """Acquire a connection from the pool.
+
+        Usage::
+
+            async with pool.acquire() as conn:
+                await conn.execute("...")
+        """
+        if not self._initialized:
+            raise RuntimeError("Pool is not initialized. Call initialize() first.")
+        if self._closed:
+            raise RuntimeError("Pool is closed.")
+
+        pc = await self._acquire()
+        try:
+            yield pc.conn
+        finally:
+            await self._release(pc)
+
+    async def _acquire(self) -> _PooledConnection:
+        """Internal: get a connection, creating one if necessary."""
+        self._waiters += 1
+        try:
+            await asyncio.wait_for(
+                self._semaphore.acquire(),
+                timeout=self._config.acquire_timeout,
+            )
+        except asyncio.TimeoutError:
+            raise TimeoutError(
+                f"Timed out waiting for a connection "
+                f"(timeout={self._config.acquire_timeout}s, "
+                f"max_size={self._config.max_size})"
+            )
+        finally:
+            self._waiters -= 1
+
+        async with self._lock:
+            # Try to reuse an idle connection
+            while self._pool:
+                pc = self._pool.popleft()
+
+                # Evict stale connections
+                if pc.age > self._config.max_lifetime:
+                    await self._destroy(pc)
+                    self._semaphore.release()
+                    break  # fall through to create a new one
+
+                if pc.idle_time > self._config.max_idle_time:
+                    await self._destroy(pc)
+                    self._semaphore.release()
+                    break
+
+                # Health check
+                if await pc.conn.ping():
+                    pc.mark_used()
+                    self._in_use.add(pc)
+                    return pc
+                else:
+                    await self._destroy(pc)
+                    self._semaphore.release()
+                    break
+            else:
+                # Pool is empty — create a new connection below
+                pass
+
+            # Create a new connection (we hold the semaphore slot)
+            pc = await self._create_connection()
+            self._in_use.add(pc)
+            return pc
+
+    async def _release(self, pc: _PooledConnection) -> None:
+        """Return a connection to the pool."""
+        async with self._lock:
+            self._in_use.discard(pc)
+
+            if self._closed or pc.conn.is_closed:
+                await self._destroy(pc)
+            elif pc.age > self._config.max_lifetime:
+                await self._destroy(pc)
+            else:
+                pc.mark_used()
+                self._pool.append(pc)
+
+        self._semaphore.release()
+
+    # ------------------------------------------------------------------
+    # Connection management
+    # ------------------------------------------------------------------
+
+    async def _create_connection(self) -> _PooledConnection:
+        """Create a new connection with retry logic."""
+        last_exc: Optional[Exception] = None
+
+        for attempt in range(1, self._config.retry_attempts + 1):
+            try:
+                raw = _Connection()
+                self._total_created += 1
+                return _PooledConnection(conn=raw)
+            except Exception as exc:
+                last_exc = exc
+                logger.warning(
+                    "Connection creation attempt %d/%d failed: %s",
+                    attempt,
+                    self._config.retry_attempts,
+                    exc,
+                )
+                if attempt < self._config.retry_attempts:
+                    await asyncio.sleep(self._config.retry_delay * attempt)
+
+        raise ConnectionError(
+            f"Failed to create connection after "
+            f"{self._config.retry_attempts} attempts"
+        ) from last_exc
+
+    async def _destroy(self, pc: _PooledConnection) -> None:
+        """Close a connection and update counters."""
+        await pc.conn.close()
+        self._total_destroyed += 1
+
+    # ------------------------------------------------------------------
+    # Background health check
+    # ------------------------------------------------------------------
+
+    async def _health_check_loop(self) -> None:
+        """Periodically check and prune idle connections."""
+        try:
+            while True:
+                await asyncio.sleep(self._config.health_check_interval)
+                await self._prune_idle()
+        except asyncio.CancelledError:
+            logger.debug("Health check loop cancelled")
+            raise
+
+    async def _prune_idle(self) -> None:
+        """Remove unhealthy or excess idle connections."""
+        async with self._lock:
+            healthy: Deque[_PooledConnection] = deque()
+
+            while self._pool:
+                pc = self._pool.popleft()
+
+                if pc.age > self._config.max_lifetime:
+                    await self._destroy(pc)
+                    self._semaphore.release()
+                    continue
+
+                if await pc.conn.ping():
+                    healthy.append(pc)
+                else:
+                    await self._destroy(pc)
+                    self._semaphore.release()
+
+            # Trim down to min_size if we have too many
+            while len(healthy) > self._config.min_size:
+                pc = healthy.pop()  # remove newest
+                await self._destroy(pc)
+                self._semaphore.release()
+
+            self._pool = healthy
+
+    # ------------------------------------------------------------------
+    # Stats
+    # ------------------------------------------------------------------
+
+    @property
+    def stats(self) -> Dict[str, Any]:
+        """Return current pool statistics."""
+        return {
+            "idle": len(self._pool),
+            "in_use": len(self._in_use),
+            "waiters": self._waiters,
+            "total_created": self._total_created,
+            "total_destroyed": self._total_destroyed,
+            "max_size": self._config.max_size,
+            "min_size": self._config.min_size,
+        }
+
+    def __repr__(self) -> str:
+        s = self.stats
+        return (
+            f"<AsyncConnectionPool "
+            f"idle={s['idle']} in_use={s['in_use']} "
+            f"waiters={s['waiters']} "
+            f"created={s['total_created']} destroyed={s['total_destroyed']}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Convenience helpers
+# ---------------------------------------------------------------------------
+
+async def get_pool(
+    config: Optional[PoolConfig] = None,
+) -> AsyncConnectionPool:
+    """Shortcut to get (and initialize) the singleton pool."""
+    pool = await AsyncConnectionPool.get_instance(config)
+    await pool.initialize()
+    return pool
+
+
+# ---------------------------------------------------------------------------
+# Demo / self-test
+# ---------------------------------------------------------------------------
+
+async def _demo() -> None:
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    config = PoolConfig(
+        min_size=3,
+        max_size=5,
+        acquire_timeout=5.0,
+        health_check_interval=10.0,
+    )
+
+    pool = await get_pool(config)
+    print(f"Pool: {pool}")
+    print(f"Stats: {pool.stats}")
+
+    async def worker(worker_id: int) -> None:
+        async with pool.acquire() as conn:
+            result = await conn.execute(f"SELECT {worker_id}")
+            print(f"Worker {worker_id}: {result} (conn #{conn.id})")
+            await asyncio.sleep(0.5)
+
+    # Launch concurrent workers
+    await asyncio.gather(*(worker(i) for i in range(10)))
+
+    print(f"\nStats after workers: {pool.stats}")
+    await pool.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(_demo())
+
+============================================================
+FILE: generated_components\test01.py
+============================================================
+
+```python
+# main.py
+import os
+import json
+import logging
+from pathlib import Path
+from typing import AsyncGenerator
+
+from fastapi import FastAPI, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from decouple import config
+
+import models
+from database import engine, get_db
+from services.openrouter_service import OpenRouterCodingService
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="OpenRouter Studio Core")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+coder_service = OpenRouterCodingService()
+
+MAX_PROMPT_LENGTH: int = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
+MAX_FILENAME_LENGTH: int = config("MAX_FILENAME_LENGTH", default=255, cast=int)
+ALLOWED_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".py", ".js", ".ts", ".java", ".cpp", ".c", ".h",
+        ".cs", ".go", ".rs", ".html", ".css",
+    }
+)
+TARGET_BASE_DIR: Path = Path("generated_components").resolve()
+
+
+def validate_filename(filename: str) -> bool:
+    if not filename or len(filename) > MAX_FILENAME_LENGTH:
+        return False
+    if ".." in filename or "~" in filename or filename.startswith("/"):
+        return False
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS and ext != "":
+        return False
+    return True
+
+
+def ensure_safe_path(filename: str) -> Path:
+    """Resolve the target path and guarantee it stays inside TARGET_BASE_DIR."""
+    safe_target_path: Path = (TARGET_BASE_DIR / filename).resolve()
+    if not str(safe_target_path).startswith(str(TARGET_BASE_DIR)):
+        raise ValueError(f"Path traversal detected: {filename}")
+    return safe_target_path
+
+
+def ensure_extension(filename: str) -> str:
+    """Append a default .py extension when the filename has none."""
+    if not Path(filename).suffix:
+        return f"{filename}.py"
+    return filename
+
+
+def build_sse_event(event_type: str, payload: dict) -> str:
+    """Build a single Server-Sent Events frame."""
+    return f"data: {json.dumps({'type': event_type, **payload})}\n\n"
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index_view(
+    request: Request, db: Session = Depends(get_db)
+) -> HTMLResponse:
+    history = (
+        db.query(models.GenerationHistory)
+        .order_by(models.GenerationHistory.created_at.desc())
+        .all()
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"history": history},
+    )
+
+
+@app.post("/api/generate")
+async def handle_generation(
+    request: Request,
+    prompt: str = Form(...),
+    filename: str = Form(...),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    logger.info(
+        "[INGRESS] Received code generation event interceptor for output component: %s",
+        filename,
+    )
+
+    # --- Pre-flight validations ---
+    if not prompt.strip() or not filename.strip():
+        logger.warning("[VALIDATION] Intercepted empty required arguments.")
+        raise HTTPException(status_code=400, detail="Required fields are empty.")
+
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        logger.warning(
+            "[VALIDATION] Prompt length boundary limit exceeded: %d chars.",
+            len(prompt),
+        )
+        raise HTTPException(
+            status_code=400, detail="Prompt exceeds maximum length threshold."
+        )
+
+    if not validate_filename(filename):
+        logger.warning(
+            "[SECURITY] Filename failed validation structural analysis: %s",
+            filename,
+        )
+        raise HTTPException(
+            status_code=400, detail="Invalid filename format or extension."
+        )
+
+    filename = ensure_extension(filename)
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        accumulated_chunks: list[str] = []
+        try:
+            stream = coder_service.generate_code_stream(prompt)
+
+            async for token in stream:
+                if await request.is_disconnected():
+                    logger.warning(
+                        "[ABORT] Client link severed. Terminating processing "
+                        "thread safely for: %s",
+                        filename,
+                    )
+                    return
+
+                accumulated_chunks.append(token)
+                yield build_sse_event("token", {"content": token})
+
+            full_source_code: str = "".join(accumulated_chunks)
+            if not full_source_code.strip():
+                logger.error(
+                    "[PIPELINE] Generation terminal finished but returned "
+                    "empty buffer string.",
+                )
+                yield build_sse_event(
+                    "error",
+                    {"detail": "Zero tokens compiled from remote node."},
+                )
+                return
+
+            try:
+                safe_target_path: Path = ensure_safe_path(filename)
+            except ValueError:
+                logger.error(
+                    "[SECURITY] Path traversal escape routine triggered and "
+                    "intercepted: %s",
+                    filename,
+                )
+                yield build_sse_event(
+                    "error",
+                    {"detail": "Security sandbox violation."},
+                )
+                return
+
+            logger.info(
+                "[IO-WRITE] Flushing memory buffer pipeline to disk: %s",
+                safe_target_path,
+            )
+            os.makedirs(safe_target_path.parent, exist_ok=True)
+            safe_target_path.write_text(full_source_code, encoding="utf-8")
+
+            # Persist generation record
+            record = models.GenerationHistory(
+                prompt=prompt,
+                filename=filename,
+                generated_code=full_source_code,
+            )
+            db.add(record)
+            db.commit()
+
+            yield build_sse_event(
+                "done",
+                {"detail": f"File written to {safe_target_path}"},
+            )
+
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception("[PIPELINE] Unhandled exception during generation.")
+            yield build_sse_event(
+                "error",
+                {"detail": f"Internal server error: {exc}"},
+            )
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+```
+
+============================================================
+FILE: generated_components\test02.py
+============================================================
+
+```python
+# Python is a high-level, interpreted programming language known for its simplicity and readability.
+# 1. Easy to learn and use due to its clean and intuitive syntax.
+# 2. Highly versatile, used in web development, data science, AI, automation, and more.
+# 3. Rich ecosystem with extensive libraries and frameworks (e.g., Django, Flask, NumPy, TensorFlow).
+# 4. Strong community support and abundant learning resources.
+# 5. Cross-platform compatibility, allowing code to run on Windows, macOS, and Linux.
+```
+
+============================================================
+FILE: services\openrouter_service.py
+============================================================
+
+# services/openrouter_service.py
+import os
+import logging
+from typing import AsyncGenerator
+from decouple import config
+from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
+
+
+class OpenRouterCodingService:
+    def __init__(self, model_name: str = "openrouter/owl-alpha") -> None:
+        self.api_key: str = config("OPENROUTER_API_KEY", default="")
+        self.base_url: str = "https://openrouter.ai/api/v1"
+        self.model_name: str = model_name
+        
+        if not self.api_key:
+            logger.error("[CRITICAL] OPENROUTER_API_KEY configuration token is missing from environment.")
+            raise ValueError("OPENROUTER_API_KEY is missing from environment.")
+            
+        # Upgrade client stack to AsyncOpenAI for non-blocking stream handling
+        self.client = AsyncOpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            default_headers={
+                "HTTP-Referer": "https://localhost:8000",
+                "X-OpenRouter-Title": "Agentic Studio Workspace"
+            }
+        )
+
+    async def generate_code_stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Invokes upstream cluster and yields tokens asynchronously."""
+        system_instruction = (
+            "You are OWL, a Senior Python/AI Engineer. Output clean, robust, OOP-compliant code "
+            "with strict type hints. Do NOT include markdown blocks like ```python or ```, "
+            "do NOT include conversational explanations or prose text. Output ONLY valid, raw executable code."
+        )
+        
+        logger.info(f"[OPENROUTER] Opening upstream network socket stream for model: {self.model_name}")
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,
+                max_tokens=4000,
+                stream=True  # Enables raw token chunk streaming
+            )
+            
+            async for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+                    
+        except Exception as e:
+            logger.error(f"[OPENROUTER-ERROR] Pipeline broken during upstream processing: {str(e)}")
+            raise e
+
+============================================================
+FILE: trading\order_book.py
+============================================================
+
+
+from sortedcontainers import SortedDict
+from typing import Optional, Tuple, List
+import asyncio
+from dataclasses import dataclass, field
+from enum import Enum
+from decimal import Decimal
+
+
+class Side(Enum):
+    BID = "bid"
+    ASK = "ask"
+
+
+@dataclass
+class Order:
+    order_id: str
+    price: Decimal
+    quantity: Decimal
+    side: Side
+    timestamp: float
+
+
+@dataclass
+class PriceLevel:
+    price: Decimal
+    quantity: Decimal
+    orders: SortedDict = field(default_factory=SortedDict)  # order_id -> Order
+
+    def add_order(self, order: Order):
+        self.orders[order.order_id] = order
+        self.quantity += order.quantity
+
+    def remove_order(self, order_id: str) -> Optional[Order]:
+        order = self.orders.pop(order_id, None)
+        if order:
+            self.quantity -= order.quantity
+            return order
+        return None
+
+    def __bool__(self):
+        return bool(self.orders)
+
+
+class OrderBook:
+    def __init__(self):
+        self.bids: SortedDict[Decimal, PriceLevel] = SortedDict()
+        self.asks: SortedDict[Decimal, PriceLevel] = SortedDict()
+        self.orders: Dict[str, Tuple[Side, Decimal] = {}  # order_id -> (side, price)
+        self._lock = asyncio.Lock()
+
+    async def add_order(self, order: Order) -> List[Tuple[Decimal, Decimal, Decimal]:
+        async with self._lock:
+            trades = []
+            if order.side == Side.BID:
+                trades = await self._match_bid(order)
+            else:
+                trades = await self._match_ask(order)
+
+            if order.quantity > 0:
+                book = self.bids if order.side == Side.BID else self.asks
+                if order.price not in book:
+                    book[order.price] = PriceLevel(price=order.price, quantity=Decimal("0"))
+                book[order.price].add_order(order)
+                self.orders[order.order_id] = (order.side, order.price)
+
+            return trades
+
+    async def _match_bid(self, order: Order) -> List[Tuple[Decimal, Decimal, Decimal]:
+        trades = []
+        while order.quantity > 0 and self.asks and self.asks.peekitem(0)[0] <= order.price:
+            best_ask_price, best_ask_level = self.asks.peekitem(0)
+            for ask_order_id, ask_order in list(best_ask_level.orders.items()):
+                fill_qty = min(order.quantity, ask_order.quantity)
+                trades.append((best_ask_price, fill_qty, ask_order.timestamp)
+                order.quantity -= fill_qty
+                ask_order.quantity -= fill_qty
+                best_ask_level.quantity -= fill_qty
+                if ask_order.quantity == 0:
+                    best_ask_level.remove_order(ask_order_id)
+                    del self.orders[ask_order_id]
+                if best_ask_level.quantity == 0:
+                    del self.asks[best_ask_price]
+                if order.quantity == 0:
+                    break
+        return trades
+
+    async def _match_ask(self, order: Order) -> List[Tuple[Decimal, Decimal, Decimal]:
+        trades = []
+        while order.quantity > 0 and self.bids and self.bids.peekitem(-1)[0] >= order.price:
+            best_bid_price, best_bid_level = self.bids.peekitem(-1)
+            for bid_order_id, bid_order in list(best_bid_level.orders.items()):
+                fill_qty = min(order.quantity, bid_order.quantity)
+                trades.append((best_bid_price, fill_qty, bid_order.timestamp)
+                order.quantity -= fill_qty
+                bid_order.quantity -= fill_qty
+                best_bid_level.quantity -= fill_qty
+                if bid_order.quantity == 0:
+                    best_bid_level.remove_order(bid_order_id)
+                    del self.orders[bid_order_id]
+                if best_bid_level.quantity == 0:
+                    del self.bids[best_bid_price]
+                if order.quantity == 0:
+                    break
+        return trades
+
+    async def cancel_order(self, order_id: str) -> bool:
+        async with self._lock:
+            if order_id not in self.orders:
+                return False
+            side, price = self.orders.pop(order_id)
+            book = self.bids if side == Side.BID else self.asks
+            if price in book:
+                level = book[price]
+                level.remove_order(order_id)
+                if not level:
+                    del book[price]
+                return True
+            return False
+
+    async def get_best_bid(self) -> Optional[Tuple[Decimal, Decimal]:
+        async with self._lock:
+            if self.bids:
+                price, level = self.bids.peekitem(-1)
+                return (price, level.quantity)
+            return None
+
+    async def get_best_ask(self) -> Optional[Tuple[Decimal, Decimal]:
+        async with self._lock:
+            if self.asks:
+                price, level = self.asks.peekitem(0)
+                return (price, level.quantity)
+            return None
+
+    async def get_depth(self, levels: int = 10) -> Tuple[List[Tuple[Decimal, Decimal], List[Tuple[Decimal, Decimal]]:
+        async with self._lock:
+            bids = []
+            asks = []
+            for i, (price, level) in enumerate(reversed(self.bids.items())):
+                if i >= levels:
+                    break
+                if level.quantity > 0:
+                    bids.append((price, level.quantity))
+            for i, (price, level) in enumerate(self.asks.items()):
+                if i >= levels:
+                    break
+                if level.quantity > 0:
+                    asks.append((price, level.quantity))
+            return bids, asks
