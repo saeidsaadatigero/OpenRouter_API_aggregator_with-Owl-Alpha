@@ -6,6 +6,9 @@
     <title>OpenRouter Studio Client</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <style>
         /* Custom Premium Dark Scrollbars Integrated Exact Spec */
         ::-webkit-scrollbar {
@@ -37,6 +40,20 @@
         @keyframes spin-pipeline {
             to { transform: rotate(360deg); }
         }
+
+        /* Custom Catppuccin Token Overrides to match Gemini Premium UI */
+        .hljs {
+            background: #181825 !important;
+            color: #cdd6f4 !important;
+            padding: 0 !important;
+        }
+        .hljs-keyword, .hljs-selector-tag { color: #cba6f7 !important; font-weight: bold; }
+        .hljs-string, .hljs-meta-string { color: #a6e3a1 !important; }
+        .hljs-title, .hljs-title.function_ { color: #89b4fa !important; }
+        .hljs-attr, .hljs-property { color: #89dceb !important; }
+        .hljs-comment { color: #6c7086 !important; font-style: italic; }
+        .hljs-number, .hljs-literal { color: #fab387 !important; }
+        .hljs-built_in { color: #f38ba8 !important; }
     </style>
 </head>
 <body class="bg-[#11111b] text-[#cdd6f4] font-sans antialiased h-screen flex overflow-hidden">
@@ -86,7 +103,7 @@
         <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-[#11111b]"></div>
 
         <footer class="p-4 bg-[#1e1e2e] border-t border-[#313244]">
-            <form id="generation-form" onsubmit="executeGenerationStream(event)" class="max-w-4xl mx-auto space-y-3">
+            <form id="generation-form" class="max-w-4xl mx-auto space-y-3">
                 <div class="flex items-center gap-3 bg-[#11111b] border border-[#313244] rounded-xl p-2.5 focus-within:border-[#89b4fa] transition shadow-inner">
                     <textarea id="prompt-input" required rows="1" placeholder="Enter structural generation rules or algorithmic prompts..." class="flex-1 bg-transparent border-0 outline-none focus:ring-0 text-sm text-[#cdd6f4] placeholder-[#6c7086] resize-none h-10 py-2.5 px-2"></textarea>
                     
@@ -112,6 +129,15 @@
     <script>
         const activeSessionId = "{{ active_session_id or '' }}";
 
+        // Configure marked engine with highlight integration
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
+
         document.addEventListener("DOMContentLoaded", () => {
             if (activeSessionId) {
                 hydrateExistingMessages(activeSessionId);
@@ -136,7 +162,7 @@
                 
                 if (messages.length === 0) {
                     container.innerHTML = `
-                        <div class="text-center text-xs text-[#6c7086] py-12" id="empty-state">
+                        <div class="text-center text-xs #6c7086 py-12" id="empty-state">
                             Active session context initialized. Awaiting user ingress instruction stack.
                         </div>
                     `;
@@ -164,16 +190,14 @@
             const roleIndicator = role === 'user' ? 'OPERATOR' : 'OWL ENGINE CORE';
             const roleColor = role === 'user' ? 'text-[#f9e2af]' : 'text-[#a6e3a1]';
             
-            const bodyClass = role === 'user' 
-                ? 'bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none py-3 px-4 shadow-md' 
-                : 'bg-[#181825] text-[#a6e3a1] border border-[#313244] rounded-2xl rounded-tl-none font-mono text-xs leading-relaxed whitespace-pre-wrap py-3 px-4 shadow-md relative w-full';
-
             if (role === 'user') {
                 wrapper.innerHTML = `
                     <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
-                    <div class="${bodyClass}">${escapeHtml(content)}</div>
+                    <div class="bg-[#313244] text-[#cdd6f4] rounded-2xl rounded-tr-none py-3 px-4 shadow-md max-w-full break-words text-sm">${escapeHtml(content)}</div>
                 `;
             } else {
+                // Parse markdown content dynamically for LLM responses
+                const parsedContent = marked.parse(content);
                 wrapper.innerHTML = `
                     <div class="flex items-center justify-between w-full mb-0.5 px-1">
                         <span class="text-[10px] font-bold tracking-widest ${roleColor} opacity-70">${roleIndicator}</span>
@@ -181,19 +205,39 @@
                             <i class="fas fa-copy text-[9px]"></i> <span>Copy Code</span>
                         </button>
                     </div>
-                    <div class="${bodyClass}">${escapeHtml(content)}</div>
+                    <div class="bg-[#181825] text-[#cdd6f4] border border-[#313244] rounded-2xl rounded-tl-none font-sans text-sm leading-relaxed py-3 px-4 shadow-md relative w-full prose prose-invert max-w-none">
+                        ${parsedContent}
+                    </div>
                 `;
+                
+                // Trigger highlight mapping on newly injected structural DOM elements
+                wrapper.querySelectorAll('pre code').forEach((el) => {
+                    hljs.highlightElement(el);
+                    // Append premium wrapper design to inner pre tags
+                    el.parentElement.className = "bg-[#11111b] p-4 rounded-lg my-3 overflow-x-auto font-mono text-xs border border-[#313244]";
+                });
             }
 
             container.appendChild(wrapper);
+            scrollTerminalToBottom();
             return wrapper;
         }
 
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, (m) => map[m]);
+        }
+
+        function scrollTerminalToBottom() {
+            const container = document.getElementById("chat-messages");
+            container.scrollTop = container.scrollHeight;
+        }
+
         async function copyCodeContents(buttonElement) {
-            const containerDiv = buttonElement.closest('.group').querySelector('.font-mono');
-            if (!containerDiv) return;
+            const codeBlock = buttonElement.closest('.group').querySelector('pre code');
+            if (!codeBlock) return;
             
-            const rawTextContent = containerDiv.textContent;
+            const rawTextContent = codeBlock.textContent;
             try {
                 await navigator.clipboard.writeText(rawTextContent);
                 const label = buttonElement.querySelector('span');
@@ -209,161 +253,6 @@
             } catch (err) {
                 console.error("[CLIPBOARD-ERROR] Copy execution failed:", err);
             }
-        }
-
-        async function executeGenerationStream(event) {
-            event.preventDefault();
-            if (!activeSessionId) return;
-
-            const promptInput = document.getElementById("prompt-input");
-            const filenameInput = document.getElementById("filename-input");
-            const submitBtn = document.getElementById("submit-btn");
-            const ticker = document.getElementById("stream-status-ticker");
-
-            const prompt = promptInput.value.trim();
-            const filename = filenameInput.value.trim();
-
-            if (!prompt) return;
-
-            appendMessageBubble("user", prompt);
-            promptInput.value = '';
-            submitBtn.disabled = true;
-            submitBtn.classList.add("opacity-40");
-            ticker.textContent = "Pipeline executing upstream remote execution layer...";
-
-            const formData = new FormData();
-            formData.append("prompt", prompt);
-            if (filename) formData.append("filename", filename);
-
-            const assistantBubble = appendMessageBubble("assistant", "");
-            const tokenTargetNode = assistantBubble.querySelector(".font-mono");
-            scrollTerminalToBottom();
-
-            // Inject standalone inline CSS spinner structure inside the target text layer
-            tokenTargetNode.innerHTML = `
-                <div id="stream-loading-placeholder" class="flex items-center gap-2 py-1 text-[#a6adc8]">
-                    <div class="pipeline-spinner"></div>
-                    <span class="italic animate-pulse">OWL Engine parsing context & compiling source nodes...</span>
-                </div>
-            `;
-
-            try {
-                const response = await fetch(`/api/chat/${activeSessionId}/generate`, {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!response.ok) throw new Error("Upstream execution channel validation fault.");
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let executionBuffer = "";
-                let isFirstToken = true;
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    executionBuffer += decoder.decode(value, { stream: true });
-                    const processingLines = executionBuffer.split("\n\n");
-                    executionBuffer = processingLines.pop();
-
-                    for (const rawLine of processingLines) {
-                        const line = rawLine.trim();
-                        if (!line.startsWith("data: ")) continue;
-                        
-                        try {
-                            const parsedJson = JSON.parse(line.substring(6));
-                            if (parsedJson.type === "token") {
-                                // Wipe the spinner placeholder exactly upon first actual stream frame arrival
-                                if (isFirstToken) {
-                                    tokenTargetNode.innerHTML = "";
-                                    isFirstToken = false;
-                                }
-                                tokenTargetNode.textContent += parsedJson.content;
-                                scrollTerminalToBottom();
-                            } else if (parsedJson.type === "final") {
-                                ticker.textContent = `File compilation successfully dumped to sandbox: ${parsedJson.filename}`;
-                            } else if (parsedJson.type === "error") {
-                                tokenTargetNode.innerHTML += `<div class="mt-2 p-2 bg-[#f38ba8]/20 text-[#f38ba8] rounded text-xs">Fault: ${parsedJson.detail}</div>`;
-                            }
-                        } catch (e) {
-                            // Suppress intra-chunk structural parsing exceptions
-                        }
-                    }
-                }
-            } catch (streamErr) {
-                console.error("[STREAM-FAULT]", streamErr);
-                tokenTargetNode.innerHTML = `<div class="p-2 bg-[#f38ba8]/20 text-[#f38ba8] rounded text-xs">Pipeline transmission dropped structurally.</div>`;
-                ticker.textContent = "Execution failure.";
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove("opacity-40");
-                scrollTerminalToBottom();
-            }
-        }
-
-        async function triggerRenamePipeline(sessionId, currentTitle) {
-            const newTitle = prompt("Enter replacement tracking identifier for this pipeline context:", currentTitle);
-            if (newTitle === null || newTitle.trim() === "") return;
-
-            const formPayload = new FormData();
-            formPayload.append("title", newTitle.trim());
-
-            try {
-                const res = await fetch(`/api/chat/${sessionId}/rename`, { method: "POST", body: formPayload });
-                if (res.ok) {
-                    document.getElementById(`session-text-${sessionId}`).textContent = newTitle.trim();
-                } else {
-                    alert("Failure updating internal metadata tracking title state.");
-                }
-            } catch (err) {
-                console.error("[RENAME-FAULT]", err);
-            }
-        }
-
-        async function triggerDeletePipeline(sessionId) {
-            if (!confirm("Confirm catastrophic database erasure operation for this session thread context?")) return;
-
-            try {
-                const res = await fetch(`/api/chat/${sessionId}/delete`, { method: "POST" });
-                if (res.ok) {
-                    document.getElementById(`session-item-${sessionId}`).remove();
-                    if (activeSessionId === String(sessionId)) {
-                        window.location.href = "/";
-                    }
-                } else {
-                    alert("Catastrophic target clearing failed at service model layer.");
-                }
-            } catch (err) {
-                console.error("[DELETE-FAULT]", err);
-            }
-        }
-
-        async function createNewSession() {
-            try {
-                const res = await fetch("/api/chat/new", { method: "POST" });
-                const data = await res.json();
-                if (data.status === "success") {
-                    window.location.href = `/chat/${data.session_id}`;
-                }
-            } catch (err) {
-                console.error("[SESSION-CREATION-FAULT]", err);
-            }
-        }
-
-        function scrollTerminalToBottom() {
-            const container = document.getElementById("chat-messages");
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
         }
     </script>
 </body>
