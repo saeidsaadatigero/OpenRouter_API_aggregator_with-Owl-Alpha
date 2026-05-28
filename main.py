@@ -24,7 +24,11 @@ coder_service = OpenRouterCodingService()
 @app.get("/", response_class=HTMLResponse)
 async def index_view(request: Request, db: Session = Depends(get_db)):
     history = db.query(models.GenerationHistory).order_by(models.GenerationHistory.created_at.desc()).all()
-    return templates.TemplateResponse("index.html", {"request": request, "history": history})
+    return templates.TemplateResponse(
+    request=request,
+    name="index.html",
+    context={"history": history}
+)
 
 @app.post("/api/generate")
 async def handle_generation(
