@@ -13,9 +13,7 @@ env/
 venv/
 ENV/
 .venv/
+
 # IDEs and editors
 .vscode/
 .idea/
-openrouter_studio.db
-*.db
-*.sqlite3
