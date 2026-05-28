@@ -1,171 +1,160 @@
 # main.py
+import os
 import json
 import logging
-from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
+from pathlib import Path
+from fastapi import FastAPI, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from pathlib import Path
+from decouple import config
 
 import models
-from database import engine, Base, get_db
+from database import engine, get_db
 from services.openrouter_service import OpenRouterCodingService
 
-# Configure logging pipeline
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("INGRESS")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
-# Initialize database schemas
-Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Agentic Code Studio Engine")
+app = FastAPI(title="OpenRouter Studio Core")
 
-# Mount system asset paths
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+coder_service = OpenRouterCodingService()
 
-# Initialize isolated workspace sandbox
-TARGET_BASE_DIR = Path("./generated_components").resolve()
-TARGET_BASE_DIR.mkdir(exist_ok=True)
-
-coding_service = OpenRouterCodingService()
-
-
-def sanitize_and_validate_path(filename: str) -> Path:
-    """Enforces strict structural boundary locks to mitigate path traversal exploits."""
-    normalized_path = Path(filename).name
-    safe_target_path = (TARGET_BASE_DIR / normalized_path).resolve()
-    return safe_target_path
+MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
+MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
+ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css'}
+# Dedicated target sandbox directory
+TARGET_BASE_DIR = Path("generated_components").resolve()
 
 
-# main.py
+def validate_filename(filename: str) -> bool:
+    if not filename or len(filename) > MAX_FILENAME_LENGTH:
+        return False
+    if '..' in filename or '~' in filename or filename.startswith('/'):
+        return False
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS and ext != '':
+        return False
+    return True
+
+
 @app.get("/", response_class=HTMLResponse)
-async def render_dashboard(request: Request, db: Session = Depends(get_db)):
-    """Fetches full analytical execution records to populate the Recents sidebar matrix."""
-    sessions = (
-        db.query(models.ChatSession)
-        .order_by(models.ChatSession.updated_at.desc())
-        .all()
-    )
-    # Explicitly pass request as a separate keyword argument to align with modern Starlette specifications
+async def index_view(request: Request, db: Session = Depends(get_db)):
+    history = db.query(models.GenerationHistory).order_by(
+        models.GenerationHistory.created_at.desc()
+    ).all()
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"history": sessions}
+        context={"history": history}
     )
-
-@app.get("/api/sessions/{session_id}")
-async def get_session_thread(session_id: int, db: Session = Depends(get_db)):
-    """Pulls precise historical chat frames linked to a specific session context vector."""
-    session_node = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
-    if not session_node:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Requested chat session thread allocation not found."
-        )
-    
-    # Extract the last compiled code payload from the assistant's message history
-    last_code = ""
-    for message in reversed(session_node.messages):
-        if message.role == "assistant" and message.generated_code:
-            last_code = message.generated_code
-            break
-
-    return {
-        "id": session_node.id,
-        "title": session_node.title,
-        "last_compiled_code": last_code
-    }
 
 
 @app.post("/api/generate")
-async def generate_code_pipeline(
+async def handle_generation(
     request: Request,
-    filename: str = Form(...),
     prompt: str = Form(...),
-    session_id: str = Form(None),
+    filename: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Intercepts compilation requests and handles stateful multiplex SSE token streaming."""
-    logger.info(f"[INGRESS] Processing generation execution thread for asset: {filename}")
+    logger.info(f"[INGRESS] Received code generation event interceptor for output component: {filename}")
     
-    # Path sandbox check
-    try:
-        validated_file_path = sanitize_and_validate_path(filename)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Security execution sandbox out-of-bounds boundary breach."
-        )
+    # Pre-flight validations
+    if not prompt.strip() or not filename.strip():
+        logger.warning("[VALIDATION] Intercepted empty required arguments.")
+        raise HTTPException(status_code=400, detail="Required fields are empty.")
+    
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        logger.warning(f"[VALIDATION] Prompt length boundary limit exceeded: {len(prompt)} chars.")
+        raise HTTPException(status_code=400, detail="Prompt exceeds maximum length threshold.")
+    
+    if not validate_filename(filename):
+        logger.warning(f"[SECURITY] Filename failed validation structural analysis: {filename}")
+        raise HTTPException(status_code=400, detail="Invalid filename format or extension.")
 
-    # Establish or fetch operational Session Node
-    if session_id and session_id.strip():
-        current_session = db.query(models.ChatSession).filter(models.ChatSession.id == int(session_id)).first()
-        if not current_session:
-            current_session = models.ChatSession(title=f"Refactor: {filename}")
-            db.add(current_session)
-            db.commit()
-            db.refresh(current_session)
-    else:
-        current_session = models.ChatSession(title=f"Feature: {filename}")
-        db.add(current_session)
-        db.commit()
-        db.refresh(current_session)
-
-    # Commit historical User prompt message payload frame
-    user_message = models.ChatMessage(
-        session_id=current_session.id,
-        role="user",
-        content=prompt,
-        filename=filename
-    )
-    db.add(user_message)
-    db.commit()
-
-    # Extract historical message context array for LLM memory buffer assembly
-    past_messages = (
-        db.query(models.ChatMessage)
-        .filter(models.ChatMessage.session_id == current_session.id)
-        .order_by(models.ChatMessage.created_at.asc())
-        .all()
-    )
-    history_payload = [{"role": m.role, "content": m.content} for m in past_messages[:-1]]
+    # Enforce standard file extension if missing
+    if not Path(filename).suffix:
+        filename = f"{filename}.py"
 
     async def event_generator():
-        accumulated_response_buffer = ""
+        accumulated_chunks = []
         try:
-            async for token in coding_service.generate_conversational_stream(history_payload, prompt):
-                if await request.is_disconnected():
-                    logger.warning("[CIRCUIT-BREAKER] Client disconnected mid-stream. Terminating upstream socket.")
-                    break
-                accumulated_response_buffer += token
-                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
-
-            # Strict IO Safe Flush directly to absolute workspace storage node
-            with open(validated_file_path, "w", encoding="utf-8") as target_file:
-                target_file.write(accumulated_response_buffer)
-            logger.info(f"[IO-WRITE] Flushed memory buffer pipeline to disk safely: {validated_file_path}")
-
-            # Commit historical Assistant message response payload frame to relational storage
-            assistant_message = models.ChatMessage(
-                session_id=current_session.id,
-                role="assistant",
-                content=f"Code compiled successfully for component {filename}.",
-                filename=filename,
-                generated_code=accumulated_response_buffer
-            )
-            db.add(assistant_message)
+            stream = coder_service.generate_code_stream(prompt)
             
-            # Touch session timestamp update execution state
-            current_session.title = f"Refactor: {filename}"
+            async for token in stream:
+                # Active verification of client lifecycle network link
+                if await request.is_disconnected():
+                    logger.warning(f"[ABORT] Client link severed. Terminating processing thread safely for: {filename}")
+                    return
+
+                accumulated_chunks.append(token)
+                # Yield payload conforming to SSE line standard
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            
+            full_source_code = "".join(accumulated_chunks)
+            if not full_source_code.strip():
+                logger.error("[PIPELINE] Generation terminal finished but returned empty buffer string.")
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Zero tokens compiled from remote node.'})}\n\n"
+                return
+
+            # Compute safe explicit target subfolder sandbox path
+            safe_target_path = (TARGET_BASE_DIR / filename).resolve()
+            if not str(safe_target_path).startswith(str(TARGET_BASE_DIR)):
+                logger.error(f"[SECURITY] Path traversal escape routine triggered and intercepted: {filename}")
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Security sandbox violation.'})}\n\n"
+                return
+
+            # Write assets inside separate folder structure
+            logger.info(f"[IO-WRITE] Flushing memory buffer pipeline to disk: {safe_target_path}")
+            os.makedirs(safe_target_path.parent, exist_ok=True)
+            with open(safe_target_path, "w", encoding="utf-8") as file_handle:
+                file_handle.write(full_source_code)
+
+            # Persist tracking history meta log inside relational database
+            logger.info("[DATABASE-TX] Committing generation audit records to storage schema.")
+            history_entry = models.GenerationHistory(
+                prompt=prompt[:500],
+                generated_code=full_source_code,
+                filename=filename
+            )
+            db.add(history_entry)
             db.commit()
-            logger.info(f"[DATABASE-TX] Committed multi-turn generation audit logs. Index node ID: {current_session.id}")
+            db.refresh(history_entry)
+            
+            logger.info(f"[SUCCESS] Core transaction finalized. Node record tracking index ID: {history_entry.id}")
+            
+            # Send completion block metadata payload to frontend
+            payload = {
+                'type': 'final',
+                'id': history_entry.id,
+                'prompt': history_entry.prompt,
+                'filename': history_entry.filename,
+                'generated_code': history_entry.generated_code,
+                'created_at': history_entry.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
 
-            yield f"data: {json.dumps({'type': 'final', 'session_id': current_session.id})}\n\n"
-
-        except Exception as err:
-            logger.error(f"[PIPELINE-FAILURE] Stream broken down due to runtime root anomaly: {str(err)}")
-            yield f"data: {json.dumps({'type': 'error', 'detail': 'Internal pipeline operational error.'})}\n\n"
+        except Exception as crash_exception:
+            db.rollback()
+            logger.error(f"[CRITICAL-FAILURE] Subroutine exception stack trace: {str(crash_exception)}")
+            yield f"data: {json.dumps({'type': 'error', 'detail': f'Runtime breakdown: {str(crash_exception)}'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

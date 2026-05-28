@@ -1,4 +1,3 @@
-# templates/index.html
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
@@ -30,43 +29,31 @@
 
     <main class="flex-1 flex overflow-hidden">
         <section class="w-1/3 min-w-[320px] border-r border-slate-800 p-6 flex flex-col justify-between bg-slate-900/20 overflow-y-auto">
-            <div class="space-y-6">
-                <button type="button" id="newChatBtn" 
-                        class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-cyan-400 font-mono text-xs uppercase tracking-wider py-3 px-4 rounded-xl transition flex items-center justify-center space-x-2 shadow-md">
-                    <i class="fa-solid fa-plus-circle text-sm"></i>
-                    <span>Initialize New Chat</span>
+            <form id="generationForm" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Target Component Filepath</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"><i class="fa-solid fa-file-code"></i></span>
+                        <input type="text" id="filename" name="filename" required placeholder="e.g., trading/order_book.py"
+                               class="w-full pl-10 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-600 transition font-mono text-sm shadow-inner"
+                               maxlength="255">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Prompt Specification</label>
+                    <textarea id="prompt" name="prompt" required rows="6" placeholder="Describe the structural OOP component you want to compile..."
+                              class="w-full p-4 bg-slate-950/80 border border-slate-800 rounded-xl focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-600 transition text-sm shadow-inner resize-none"
+                              maxlength="5000"></textarea>
+                    <div class="text-right text-xs text-slate-500 mt-1">
+                        <span id="charCount">0</span>/5000
+                    </div>
+                </div>
+                <button type="submit" id="submitBtn"
+                        class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-cyan-500/10 flex items-center justify-center space-x-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="btnText">Compile Architecture</span>
+                    <i id="btnIcon" class="fa-solid fa-bolt transition group-hover:scale-110"></i>
                 </button>
-
-                <hr class="border-slate-800/60" />
-
-                <form id="generationForm" class="space-y-6">
-                    <input type="hidden" id="sessionId" name="session_id" value="">
-                    
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Target Component Filepath</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"><i class="fa-solid fa-file-code"></i></span>
-                            <input type="text" id="filename" name="filename" required placeholder="e.g., trading/order_book.py"
-                                   class="w-full pl-10 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-600 transition font-mono text-sm shadow-inner"
-                                   maxlength="255">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Prompt Specification</label>
-                        <textarea id="prompt" name="prompt" required rows="6" placeholder="Describe the structural OOP component you want to compile..."
-                                  class="w-full p-4 bg-slate-950/80 border border-slate-800 rounded-xl focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-600 transition text-sm shadow-inner resize-none"
-                                  maxlength="5000"></textarea>
-                        <div class="text-right text-xs text-slate-500 mt-1">
-                            <span id="charCount">0</span>/5000
-                        </div>
-                    </div>
-                    <button type="submit" id="submitBtn"
-                            class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-cyan-500/10 flex items-center justify-center space-x-2 group disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span id="btnText">Compile Architecture</span>
-                        <i id="btnIcon" class="fa-solid fa-bolt transition group-hover:scale-110"></i>
-                    </button>
-                </form>
-            </div>
+            </form>
 
             <div id="loaderState" class="hidden mt-6 p-4 bg-slate-950/50 border border-cyan-500/20 rounded-xl flex-col">
                 <div class="flex items-center space-x-4">
@@ -91,7 +78,7 @@
         <section class="flex-1 flex flex-col overflow-hidden bg-slate-950">
             <div class="border-b border-slate-800/80 bg-slate-900/10 px-6 py-3 flex items-center justify-between">
                 <div class="text-xs font-mono text-slate-400 flex items-center space-x-2">
-                    <i class="fa-solid fa-clock-history"></i> <span>Workspace Logs & Threads</span>
+                    <i class="fa-solid fa-clock-history"></i> <span>Workspace Logs</span>
                 </div>
                 <div class="flex items-center space-x-2">
                     <span id="codeStats" class="text-xs text-slate-500 font-mono hidden">
@@ -105,14 +92,15 @@
 
             <div class="flex-1 flex overflow-hidden">
                 <div class="w-2/5 min-w-[280px] border-r border-slate-800/60 overflow-y-auto p-4 space-y-3" id="historyContainer">
-                    {% for session in history %}
-                    <div data-id="{{ session.id }}" id="card-{{ session.id }}"
+                    {% for item in history %}
+                    <div data-id="{{ item.id }}" id="card-{{ item.id }}"
                          class="history-card p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition relative group shadow-sm">
                         <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-mono text-cyan-400 truncate max-w-[180px]"><i class="fa-regular fa-comments text-slate-500 mr-1"></i>{{ session.title }}</span>
-                            <span class="text-[10px] text-slate-500 font-mono">{{ session.updated_at.strftime('%m/%d %H:%M') }}</span>
+                            <span class="text-xs font-mono text-cyan-400 truncate max-w-[180px]"><i class="fa-solid fa-file-invoice-dollar text-slate-500 mr-1"></i>{{ item.filename }}</span>
+                            <span class="text-[10px] text-slate-500 font-mono">{{ item.created_at.strftime('%m/%d %H:%M') }}</span>
                         </div>
-                        <p class="text-xs text-slate-400 line-clamp-1 font-sans">Active conversation thread stream context.</p>
+                        <p class="text-xs text-slate-300 line-clamp-2 pr-4 font-sans">{{ item.prompt }}</p>
+                        <textarea class="hidden" id="raw-{{ item.id }}">{{ item.generated_code }}</textarea>
                     </div>
                     {% endfor %}
                 </div>
@@ -122,7 +110,7 @@
                         <div class="py-6 px-2 text-right select-none border-r border-slate-800/40" id="lineNumbers">
                             <span class="text-xs font-mono text-slate-600 leading-relaxed block">1</span>
                         </div>
-                        <pre class="flex-1 p-6"><code id="codeDisplay" class="text-sm font-mono text-emerald-400 leading-relaxed block whitespace-pre-wrap">Select an enterprise architecture workflow thread from the recent trace stack or compile a new model to view logs.</code></pre>
+                        <pre class="flex-1 p-6"><code id="codeDisplay" class="text-sm font-mono text-emerald-400 leading-relaxed block whitespace-pre-wrap">Select an enterprise architecture workflow from the left trace stack or compile a new model to view logs.</code></pre>
                     </div>
                 </div>
             </div>
@@ -131,8 +119,6 @@
 
     <script>
         const form = document.getElementById('generationForm');
-        const sessionIdInput = document.getElementById('sessionId');
-        const newChatBtn = document.getElementById('newChatBtn');
         const submitBtn = document.getElementById('submitBtn');
         const loaderState = document.getElementById('loaderState');
         const abortBtn = document.getElementById('abortBtn');
@@ -147,7 +133,7 @@
         const toastContainer = document.getElementById('toastContainer');
 
         let currentActiveBuffer = "";
-        let streamAbortController = null;
+        let streamAbortController = null; // Active network stream killer state reference
 
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
@@ -155,7 +141,10 @@
             const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
             
             toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 transform transition-all duration-300 translate-x-full`;
-            toast.innerHTML = `<i class="fa-solid ${icon}"></i><span class="text-sm font-medium">${message}</span>`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon}"></i>
+                <span class="text-sm font-medium">${message}</span>
+            `;
             
             toastContainer.appendChild(toast);
             requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
@@ -183,57 +172,26 @@
             lineNumbers.innerHTML = html;
         }
 
-        // Initialize New Chat Session
-        newChatBtn.addEventListener('click', () => {
-            sessionIdInput.value = "";
-            form.reset();
-            charCount.textContent = '0';
-            codeDisplay.textContent = "Initialized clean session. Write prompt instruction to compile asset.";
-            currentActiveBuffer = "";
-            updateLineNumbers();
-            document.querySelectorAll('.history-card').forEach(c => c.classList.remove('border-cyan-500/50', 'bg-slate-900/80'));
-            showToast('New pipeline context ready.', 'success');
-        });
-
+        // Interruption Event Bind Handler
         abortBtn.addEventListener('click', () => {
-            if (streamAbortController) streamAbortController.abort();
-        });
-
-        // Async Thread Selection from Recents Stack
-        async function loadSessionThread(id) {
-            document.querySelectorAll('.history-card').forEach(c => c.classList.remove('border-cyan-500/50', 'bg-slate-900/80'));
-            const selectedCard = document.getElementById(`card-${id}`);
-            if (selectedCard) selectedCard.classList.add('border-cyan-500/50', 'bg-slate-900/80');
-
-            try {
-                const response = await fetch(`/api/sessions/${id}`);
-                if (!response.ok) throw new Error("Failed to pull conversational database frames.");
-                const data = await response.json();
-                
-                sessionIdInput.value = id;
-                // Render latest code snippet linked to thread context
-                codeDisplay.textContent = data.last_compiled_code || "No compiled assets generated inside this session yet.";
-                currentActiveBuffer = data.last_compiled_code || "";
-                updateLineNumbers();
-            } catch (err) {
-                showToast(err.message);
+            if (streamAbortController) {
+                streamAbortController.abort();
+                logger.info("[UI] User hit termination button. Dispatching abort signal vector.");
             }
-        }
-
-        document.querySelectorAll('.history-card').forEach(card => {
-            card.addEventListener('click', () => loadSessionThread(card.dataset.id));
         });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const filename = document.getElementById('filename').value.trim();
             const prompt = promptInput.value.trim();
             
             if (!filename || !prompt) {
-                showToast('Fields are empty.');
+                showToast('Please fill in all required fields.');
                 return;
             }
             
+            // Instantiating fresh cancel core engine handle
             streamAbortController = new AbortController();
             const { signal } = streamAbortController;
             
@@ -241,15 +199,24 @@
             loaderState.classList.remove('hidden');
             loaderState.classList.add('flex');
             
+            // Clear current screen layout to trace live streaming chunks
             codeDisplay.textContent = "";
             currentActiveBuffer = "";
 
             const formData = new FormData(form);
             
             try {
-                const response = await fetch('/api/generate', { method: 'POST', body: formData, signal });
-                if (!response.ok) throw new Error(`Network breakdown: ${response.status}`);
+                const response = await fetch('/api/generate', { 
+                    method: 'POST', 
+                    body: formData,
+                    signal: signal
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server network failure with state: ${response.status}`);
+                }
 
+                // Processing reader stream buffer chunks
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
                 let textBuffer = "";
@@ -260,44 +227,111 @@
 
                     textBuffer += decoder.decode(value, { stream: true });
                     const lines = textBuffer.split("\n");
-                    textBuffer = lines.pop();
+                    textBuffer = lines.pop(); // Hold onto partial line structures
 
                     for (const line of lines) {
                         if (line.startsWith("data: ")) {
                             const rawJson = line.slice(6).trim();
                             if (!rawJson) continue;
+
                             try {
                                 const payload = JSON.parse(rawJson);
+                                
                                 if (payload.type === "token") {
+                                    // Append live source engine data chunks straight to the UI
                                     codeDisplay.textContent += payload.content;
                                     currentActiveBuffer = codeDisplay.textContent;
                                     updateLineNumbers();
-                                } else if (payload.type === "final") {
-                                    sessionIdInput.value = payload.session_id;
-                                    showToast('Pipeline finalized and flushed successfully.', 'success');
-                                    // Optional: Trigger full recents DOM redraw if session is brand new
-                                } else if (payload.type === "error") {
+                                } 
+                                else if (payload.type === "final") {
+                                    // Injecting history entry stack frame securely
+                                    const freshCard = document.createElement('div');
+                                    freshCard.id = `card-${payload.id}`;
+                                    freshCard.dataset.id = payload.id;
+                                    freshCard.className = "history-card p-4 bg-slate-900/40 border border-cyan-500/40 rounded-xl cursor-pointer transition relative group shadow-sm";
+                                    freshCard.innerHTML = `
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="text-xs font-mono text-cyan-400 truncate max-w-[180px]"><i class="fa-solid fa-file-invoice-dollar text-slate-500 mr-1"></i>${escapeHtml(payload.filename)}</span>
+                                            <span class="text-[10px] text-slate-500 font-mono">Just Now</span>
+                                        </div>
+                                        <p class="text-xs text-slate-300 line-clamp-2 pr-4 font-sans">${escapeHtml(payload.prompt)}</p>
+                                        <textarea class="hidden" id="raw-${payload.id}">${escapeHtml(payload.generated_code)}</textarea>
+                                    `;
+                                    
+                                    freshCard.addEventListener('click', () => displayCode(payload.id));
+                                    historyContainer.insertBefore(freshCard, historyContainer.firstChild);
+                                    
+                                    form.reset();
+                                    charCount.textContent = '0';
+                                    showToast('Component successfully generated and saved to isolated workspace sandbox!', 'success');
+                                } 
+                                else if (payload.type === "error") {
                                     showToast(payload.detail);
                                 }
-                            } catch (err) {}
+                            } catch (err) {
+                                // Mute parsing fragmentation errors during continuous stream steps
+                            }
                         }
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError') showToast('Stream killed cleanly.', 'error');
-                else showToast(err.message);
+                if (err.name === 'AbortError') {
+                    showToast('Transmission stream processing aborted cleanly by developer.', 'error');
+                } else {
+                    showToast('Pipeline communication fault: ' + err.message);
+                }
             } finally {
                 submitBtn.disabled = false;
                 loaderState.classList.add('hidden');
+                loaderState.classList.remove('flex');
                 streamAbortController = null;
             }
         });
 
-        copyBtn.addEventListener('click', async () => {
-            if (!currentActiveBuffer) return;
-            await navigator.clipboard.writeText(currentActiveBuffer);
-            showToast("Copied buffer layout.", "success");
+        function displayCode(id) {
+            document.querySelectorAll('.history-card').forEach(c => {
+                c.classList.remove('border-cyan-500/50', 'bg-slate-900/80');
+            });
+            
+            const selectedCard = document.getElementById(`card-${id}`);
+            if (selectedCard) {
+                selectedCard.classList.add('border-cyan-500/50', 'bg-slate-900/80');
+            }
+            
+            const rawCode = document.getElementById(`raw-${id}`).value;
+            codeDisplay.textContent = rawCode;
+            currentActiveBuffer = rawCode;
+            updateLineNumbers();
+        }
+
+        document.querySelectorAll('.history-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const id = card.dataset.id;
+                if (id) displayCode(id);
+            });
         });
+
+        copyBtn.addEventListener('click', async () => {
+            if (!currentActiveBuffer) {
+                showToast('No code to copy. Generate or select code first.');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(currentActiveBuffer);
+                copyBtn.innerHTML = "<i class='fa-solid fa-check text-emerald-400'></i> <span class='text-emerald-400'>Copied!</span>";
+                setTimeout(() => {
+                    copyBtn.innerHTML = "<i class='fa-regular fa-copy'></i> <span>Copy Raw Buffer</span>";
+                }, 2000);
+            } catch (err) {
+                showToast('Failed to copy to clipboard');
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>
