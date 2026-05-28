@@ -1,42 +1,63 @@
 # main.py
-
 import os
+from fastapi import FastAPI, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from typing import List
+
+import models
+import schemas
+from database import engine, get_db
 from services.openrouter_service import OpenRouterCodingService
 
-def generate_custom_component(prompt: str, filename: str) -> None:
-    """
-    Invokes the OpenRouter agentic model to generate architecture components
-    and saves the output strictly to a file.
-    """
-    # Using tencent/hy3-preview for deep reasoning workflows if needed, 
-    # or sticking to openrouter/owl-alpha for fast agent tasks
-    coder_service = OpenRouterCodingService(model_name="openrouter/owl-alpha")
-    
-    system_instruction = (
-        "You are a Senior Python/AI Engineer. Output clean, robust, OOP-compliant code "
-        "with strict type hints. Do NOT include explanations, markdown blocks, or text. "
-        "Output ONLY valid, raw executable Python code."
-    )
-    
-    print(f"Requesting engine component for: '{prompt}'...")
-    try:
-        generated_code = coder_service.generate_code(
-            prompt=prompt, 
-            system_instruction=system_instruction
-        )
-        
-        # Ensure target directory exists
-        os.makedirs(os.path.dirname(filename) if os.path.dirname(filename) else ".", exist_ok=True)
-        
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(generated_code.strip().replace("```python", "").replace("```", ""))
-            
-        print(f"[SUCCESS] Component successfully compiled and saved to {filename}")
-        
-    except Exception as e:
-        print(f"[ERROR] Failed to compile pipeline: {str(e)}")
+# Build tables
+models.Base.metadata.create_all(bind=engine)
 
-if __name__ == "__main__":
-    # Example: Generating a high-performance algorithmic trading order book parser
-    target_prompt = "Create an optimized, async OrderBook class for crypto limit order books using SortedDict."
-    generate_custom_component(prompt=target_prompt, filename="trading/order_book.py")
+app = FastAPI(title="OpenRouter Studio Core")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+coder_service = OpenRouterCodingService()
+
+@app.get("/", response_class=HTMLResponse)
+async def index_view(request: Request, db: Session = Depends(get_db)):
+    history = db.query(models.GenerationHistory).order_by(models.GenerationHistory.created_at.desc()).all()
+    return templates.TemplateResponse("index.html", {"request": request, "history": history})
+
+@app.post("/api/generate")
+async def handle_generation(
+    prompt: str = Form(...),
+    filename: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if not prompt.strip() or not filename.strip():
+        raise HTTPException(status_code=400, detail="Required fields are empty.")
+    try:
+        raw_code = coder_service.generate_code(prompt=prompt)
+        
+        # Save exact module file locally
+        os.makedirs(os.path.dirname(filename) if os.path.dirname(filename) else ".", exist_ok=True)
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(raw_code)
+            
+        history_entry = models.GenerationHistory(
+            prompt=prompt,
+            generated_code=raw_code,
+            filename=filename
+        )
+        db.add(history_entry)
+        db.commit()
+        db.refresh(history_entry)
+        
+        return {
+            "id": history_entry.id,
+            "prompt": history_entry.prompt,
+            "filename": history_entry.filename,
+            "generated_code": history_entry.generated_code,
+            "created_at": history_entry.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"detail": str(e)})
