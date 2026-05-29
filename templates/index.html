@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OWL Studio — Intelligence Terminal</title>
+    <title>🌌 OWL Studio — Intelligence Terminal</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%236366f1'/><stop offset='100%25' stop-color='%23a855f7'/></linearGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' dy='.1em'>🌌</text></svg>">
     <meta name="theme-color" content="#6366f1">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -38,6 +38,28 @@
             --font-mono:    'JetBrains Mono', monospace;
         }
 
+        /* Light Theme */
+        [data-theme="light"] {
+            --bg-base:      #f8f9fa;
+            --bg-surface:   #ffffff;
+            --bg-elevated:  #f1f3f5;
+            --bg-hover:     #e9ecef;
+            --border:       #dee2e6;
+            --border-light: #ced4da;
+            --accent:       #7c6af7;
+            --accent-soft:  #6358e0;
+            --accent-glow:  rgba(124,106,247,0.12);
+            --accent-glow2: rgba(124,106,247,0.05);
+            --green:        #28a745;
+            --green-glow:   rgba(40,167,69,0.15);
+            --red:          #dc3545;
+            --yellow:       #ffc107;
+            --cyan:         #17a2b8;
+            --text-primary: #212529;
+            --text-muted:   #6c757d;
+            --text-dim:     #adb5bd;
+        }
+
         * { box-sizing: border-box; }
 
         ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -53,6 +75,7 @@
             display: flex;
             overflow: hidden;
             user-select: none;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* ── SIDEBAR ─────────────────────────────── */
@@ -64,6 +87,7 @@
             flex-direction: column;
             flex-shrink: 0;
             position: relative;
+            transition: background 0.3s ease;
         }
 
         aside::before {
@@ -239,6 +263,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            transition: background 0.3s ease;
         }
 
         .status-badge {
@@ -270,6 +295,7 @@
             background: var(--bg-base);
             position: relative;
             overflow: hidden;
+            transition: background 0.3s ease;
         }
 
         /* subtle grid bg */
@@ -297,6 +323,11 @@
             padding: 0 24px;
             z-index: 10;
             position: relative;
+            transition: background 0.3s ease;
+        }
+
+        [data-theme="light"] header {
+            background: rgba(255,255,255,0.9);
         }
 
         .header-left {
@@ -351,6 +382,28 @@
             letter-spacing: 0.05em;
         }
 
+        /* Theme Toggle Button */
+        .theme-toggle {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
         /* ── MESSAGES ────────────────────────────── */
         #chat-messages {
             flex: 1;
@@ -401,6 +454,7 @@
             width: 100%;
             user-select: text;
             position: relative;
+            transition: background 0.3s ease;
         }
 
         .msg-bubble-assistant::before {
@@ -427,6 +481,67 @@
 
         .msg-label.owl { color: var(--accent-soft); }
         .msg-label.you { color: var(--text-dim); }
+
+        /* Message Timestamp */
+        .msg-timestamp {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .msg-wrapper:hover .msg-timestamp {
+            opacity: 1;
+        }
+
+        .msg-wrapper.user .msg-timestamp {
+            text-align: right;
+        }
+
+        /* Message Actions */
+        .msg-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .msg-wrapper:hover .msg-actions {
+            opacity: 1;
+        }
+
+        .msg-wrapper.user .msg-actions {
+            justify-content: flex-end;
+        }
+
+        .msg-action-btn {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+
+        .msg-action-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        .msg-action-btn.delete:hover {
+            color: var(--red);
+            border-color: var(--red);
+        }
 
         /* markdown inside assistant bubbles */
         .msg-bubble-assistant h1, .msg-bubble-assistant h2, .msg-bubble-assistant h3 {
@@ -464,6 +579,8 @@
 
         .hljs { background: #0d0d18 !important; color: #cdd6f4 !important; padding: 0 !important; }
 
+        [data-theme="light"] .hljs { background: #f8f9fa !important; color: #212529 !important; }
+
         /* code block */
         .code-block-wrapper {
             margin: 12px 0;
@@ -482,6 +599,10 @@
             padding: 8px 16px;
             font-family: var(--font-mono);
             font-size: 11px;
+        }
+
+        [data-theme="light"] .code-block-header {
+            background: #f8f9fa;
         }
 
         .code-lang-tag {
@@ -517,6 +638,10 @@
             font-family: var(--font-mono) !important;
             font-size: 12.5px !important;
             line-height: 1.65 !important;
+        }
+
+        [data-theme="light"] .code-block-pre {
+            background: #f8f9fa !important;
         }
 
         /* ── TYPING INDICATOR ────────────────────── */
@@ -636,6 +761,69 @@
             letter-spacing: 0.08em;
         }
 
+        /* ── LOADING SKELETON ────────────────────── */
+        .skeleton-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 32px 48px;
+        }
+
+        .skeleton-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            animation: skeleton-pulse 1.5s infinite;
+        }
+
+        .skeleton-item.user {
+            align-items: flex-end;
+        }
+
+        .skeleton-item.assistant {
+            align-items: flex-start;
+        }
+
+        .skeleton-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: var(--bg-elevated);
+        }
+
+        .skeleton-bubble {
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+        }
+
+        .skeleton-bubble.user {
+            width: 200px;
+            background: linear-gradient(90deg, rgba(124,106,247,0.2) 25%, rgba(124,106,247,0.3) 50%, rgba(124,106,247,0.2) 75%);
+            background-size: 200% 100%;
+        }
+
+        .skeleton-bubble.assistant {
+            width: 400px;
+        }
+
+        .skeleton-bubble.assistant.small {
+            width: 250px;
+            height: 80px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        @keyframes skeleton-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         /* ── FOOTER / INPUT ──────────────────────── */
         footer {
             padding: 16px 48px 20px;
@@ -644,6 +832,11 @@
             border-top: 1px solid var(--border);
             z-index: 10;
             position: relative;
+            transition: background 0.3s ease;
+        }
+
+        [data-theme="light"] footer {
+            background: rgba(255,255,255,0.95);
         }
 
         .input-form { max-width: 780px; margin: 0 auto; }
@@ -706,6 +899,107 @@
             text-align: center;
             margin-top: 8px;
             letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .char-counter {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .char-counter.warning {
+            color: var(--yellow);
+        }
+
+        .char-counter.danger {
+            color: var(--red);
+        }
+
+        /* Auto-scroll Toggle */
+        .auto-scroll-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .auto-scroll-toggle input {
+            display: none;
+        }
+
+        .toggle-slider {
+            width: 28px;
+            height: 16px;
+            background: var(--border);
+            border-radius: 8px;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.2s;
+        }
+
+        .auto-scroll-toggle input:checked + .toggle-slider {
+            background: var(--accent);
+        }
+
+        .auto-scroll-toggle input:checked + .toggle-slider::after {
+            left: 14px;
+            background: #fff;
+        }
+
+        .toggle-label {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* ── SCROLL TO BOTTOM BUTTON ─────────────── */
+        .scroll-bottom-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 48px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .scroll-bottom-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .scroll-bottom-btn:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
         }
 
         /* ── MODAL ───────────────────────────────── */
@@ -794,6 +1088,114 @@
 
         .modal-btn-save:disabled { opacity: 0.4; cursor: default; }
         .modal-btn-save:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(124,106,247,0.45); }
+
+        /* ── EXPORT MENU ─────────────────────────── */
+        .export-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            padding: 6px;
+            min-width: 160px;
+            z-index: 100;
+            display: none;
+        }
+
+        .export-menu.open {
+            display: block;
+        }
+
+        .export-item {
+            width: 100%;
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-family: var(--font-ui);
+            font-weight: 500;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            transition: background 0.15s;
+        }
+
+        .export-item:hover {
+            background: var(--bg-hover);
+        }
+
+        /* ── EDIT MESSAGE TEXTAREA ───────────────── */
+        .edit-textarea {
+            width: 100%;
+            min-width: 580px;
+            max-width: 580px;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--accent);
+            border-radius: 16px 16px 4px 16px;
+            padding: 12px 18px;
+            font-family: var(--font-ui);
+            font-size: 13.5px;
+            color: var(--text-primary);
+            outline: none;
+            resize: vertical;
+            min-height: 150px;
+            max-height: 300px;
+            line-height: 1.6;
+            margin-top: 8px;
+            overflow-y: auto;
+        }
+
+        .edit-textarea:focus {
+            box-shadow: 0 0 0 3px var(--accent-glow2);
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+
+        .edit-save-btn {
+            padding: 6px 14px;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .edit-save-btn:hover {
+            background: #5b4fcf;
+        }
+
+        .edit-cancel-btn {
+            padding: 6px 14px;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: transparent;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .edit-cancel-btn:hover {
+            background: var(--bg-hover);
+        }
     </style>
 </head>
 <body>
@@ -862,11 +1264,48 @@
                 {% endif %}
             </div>
             <div class="header-right">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+                <div style="position:relative;">
+                    <button class="theme-toggle" onclick="toggleExportMenu()" title="Export Chat">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <div id="export-menu" class="export-menu">
+                        <button class="export-item" onclick="exportChat('json')">
+                            <i class="fas fa-file-code" style="color:var(--cyan)"></i> Export as JSON
+                        </button>
+                        <button class="export-item" onclick="exportChat('markdown')">
+                            <i class="fas fa-file-alt" style="color:var(--green)"></i> Export as Markdown
+                        </button>
+                        <button class="export-item" onclick="exportChat('txt')">
+                            <i class="fas fa-file" style="color:var(--yellow)"></i> Export as Text
+                        </button>
+                    </div>
+                </div>
                 <span class="model-badge">Owl-Alpha/ Chat</span>
             </div>
         </header>
 
-        <div id="chat-messages"></div>
+        <div id="chat-messages">
+            <!-- Loading Skeleton -->
+            <div id="loading-skeleton" class="skeleton-wrapper">
+                <div class="skeleton-item assistant">
+                    <div class="skeleton-bubble assistant"></div>
+                </div>
+                <div class="skeleton-item user">
+                    <div class="skeleton-bubble user"></div>
+                </div>
+                <div class="skeleton-item assistant">
+                    <div class="skeleton-bubble assistant small"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll to Bottom Button -->
+        <button id="scroll-bottom-btn" class="scroll-bottom-btn" onclick="scrollToBottom()">
+            <i class="fas fa-chevron-down"></i>
+        </button>
 
         <footer>
             <form id="generation-form" class="input-form">
@@ -878,7 +1317,15 @@
                         <i class="fas fa-paper-plane" style="font-size:12px"></i>
                     </button>
                 </div>
-                <p class="input-hint">Enter ↵ to send &nbsp;·&nbsp; Shift+Enter for new line</p>
+                <p class="input-hint">
+                    <span>Enter ↵ to send · Shift+Enter for new line</span>
+                    <span class="char-counter" id="char-counter">0 / 15000</span>
+                    <label class="auto-scroll-toggle">
+                        <input type="checkbox" id="auto-scroll-toggle" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Auto-scroll</span>
+                    </label>
+                </p>
             </form>
         </footer>
     </main>
@@ -902,6 +1349,158 @@
         const activeSessionId = "{{ active_session_id or '' }}";
         let currentEditingChatId = null;
         let originalChatTitle = "";
+        let messageTimestamps = {};
+        let autoScrollEnabled = true;
+
+        // ── Theme Toggle ───────────────────────────────
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            const currentTheme = body.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                body.removeAttribute('data-theme');
+                icon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                icon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+            document.getElementById('theme-icon').className = 'fas fa-sun';
+        }
+
+        // ── Export Menu ────────────────────────────────
+        function toggleExportMenu() {
+            document.getElementById('export-menu').classList.toggle('open');
+        }
+
+        // Close export menu on outside click
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('export-menu');
+            const btn = e.target.closest('.theme-toggle');
+            if (menu && !menu.contains(e.target) && !btn) {
+                menu.classList.remove('open');
+            }
+        });
+
+        // ── Export Chat ────────────────────────────────
+        function exportChat(format) {
+            const messages = document.getElementById('chat-messages');
+            const msgWrappers = messages.querySelectorAll('.msg-wrapper');
+            
+            if (msgWrappers.length === 0) {
+                alert('No messages to export!');
+                return;
+            }
+
+            let content = '';
+            const timestamp = new Date().toISOString();
+
+            if (format === 'json') {
+                const data = [];
+                msgWrappers.forEach(wrapper => {
+                    const role = wrapper.classList.contains('user') ? 'user' : 'assistant';
+                    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+                    const timeEl = wrapper.querySelector('.msg-timestamp');
+                    data.push({
+                        role: role,
+                        content: bubble ? bubble.innerText : '',
+                        timestamp: timeEl ? timeEl.getAttribute('data-time') : ''
+                    });
+                });
+                content = JSON.stringify(data, null, 2);
+            } else if (format === 'markdown') {
+                content = `# OWL Studio Chat Export\n`;
+                content += `Date: ${new Date().toLocaleString()}\n\n`;
+                content += `---\n\n`;
+                msgWrappers.forEach(wrapper => {
+                    const role = wrapper.classList.contains('user') ? '**You**' : '**OWL**';
+                    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+                    const timeEl = wrapper.querySelector('.msg-timestamp');
+                    const time = timeEl ? timeEl.innerText : '';
+                    content += `${role} _(${time})_\n\n`;
+                    content += `${bubble ? bubble.innerText : ''}\n\n`;
+                    content += `---\n\n`;
+                });
+            } else if (format === 'txt') {
+                content = `OWL Studio Chat Export\n`;
+                content += `Date: ${new Date().toLocaleString()}\n\n`;
+                content += `========================\n\n`;
+                msgWrappers.forEach(wrapper => {
+                    const role = wrapper.classList.contains('user') ? 'You' : 'OWL';
+                    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+                    const timeEl = wrapper.querySelector('.msg-timestamp');
+                    const time = timeEl ? timeEl.innerText : '';
+                    content += `[${time}] ${role}:\n`;
+                    content += `${bubble ? bubble.innerText : ''}\n\n`;
+                    content += `========================\n\n`;
+                });
+            }
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `owl-chat-${Date.now()}.${format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt'}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            document.getElementById('export-menu').classList.remove('open');
+        }
+
+        // ── Character Counter ──────────────────────────
+        const MAX_CHARS = 15000;
+
+        function updateCharCounter() {
+            const textarea = document.getElementById('prompt-input');
+            const counter = document.getElementById('char-counter');
+            const length = textarea.value.length;
+            
+            counter.textContent = `${length} / ${MAX_CHARS}`;
+            
+            counter.classList.remove('warning', 'danger');
+            if (length > MAX_CHARS * 0.9) {
+                counter.classList.add('danger');
+            } else if (length > MAX_CHARS * 0.7) {
+                counter.classList.add('warning');
+            }
+        }
+
+        // ── Auto-scroll Toggle ─────────────────────────
+        document.getElementById('auto-scroll-toggle').addEventListener('change', (e) => {
+            autoScrollEnabled = e.target.checked;
+            localStorage.setItem('autoScroll', autoScrollEnabled);
+        });
+
+        // Load saved auto-scroll preference
+        if (localStorage.getItem('autoScroll') === 'false') {
+            document.getElementById('auto-scroll-toggle').checked = false;
+            autoScrollEnabled = false;
+        }
+
+        // ── Scroll to Bottom ───────────────────────────
+        function scrollToBottom() {
+            const container = document.getElementById('chat-messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Show/hide scroll button based on scroll position
+        document.getElementById('chat-messages').addEventListener('scroll', function() {
+            const btn = document.getElementById('scroll-bottom-btn');
+            const isNearBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 100;
+            
+            if (isNearBottom) {
+                btn.classList.remove('visible');
+            } else {
+                btn.classList.add('visible');
+            }
+        });
 
         // ── marked + hljs setup ──────────────────────────
         marked.setOptions({
@@ -912,7 +1511,27 @@
 
         // ── DOMContentLoaded ─────────────────────────────
         document.addEventListener("DOMContentLoaded", () => {
-            if (activeSessionId) hydrateExistingMessages(activeSessionId);
+            // Restore draft from localStorage
+            const savedDraft = localStorage.getItem('draft_prompt');
+            if (savedDraft) {
+                const promptArea = document.getElementById('prompt-input');
+                promptArea.value = savedDraft;
+                promptArea.style.height = 'auto';
+                promptArea.style.height = Math.min(promptArea.scrollHeight, 160) + 'px';
+                updateCharCounter();
+            }
+
+            // Hide loading skeleton after content loads
+            setTimeout(() => {
+                const skeleton = document.getElementById('loading-skeleton');
+                if (skeleton) skeleton.remove();
+                
+                if (activeSessionId) {
+                    hydrateExistingMessages(activeSessionId);
+                } else {
+                    showEmptyState();
+                }
+            }, 1500);
 
             document.addEventListener('click', () => {
                 document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
@@ -929,6 +1548,9 @@
             promptArea.addEventListener('input', () => {
                 promptArea.style.height = 'auto';
                 promptArea.style.height = Math.min(promptArea.scrollHeight, 160) + 'px';
+                updateCharCounter();
+                // Save draft to localStorage
+                localStorage.setItem('draft_prompt', promptArea.value);
             });
 
             // keyboard submit
@@ -948,9 +1570,18 @@
 
                 if (!promptText || !activeSessionId) return;
 
+                // Check character limit
+                if (promptText.length > MAX_CHARS) {
+                    alert(`Message too long! Maximum ${MAX_CHARS} characters allowed.`);
+                    return;
+                }
+
                 appendMessageBubble('user', promptText);
                 promptInput.value = '';
                 promptInput.style.height = 'auto';
+                updateCharCounter();
+                // Clear draft after sending
+                localStorage.removeItem('draft_prompt');
 
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
@@ -987,6 +1618,17 @@
             });    
         });
 
+        // ── Show Empty State ────────────────────────────
+        function showEmptyState() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-crow"></i></div>
+                    <span class="empty-state-text">Session initialized — Start a conversation</span>
+                </div>
+            `;
+        }
+
         // ── TYPING INDICATOR ─────────────────────────────
         function showTypingIndicator() {
             const container = document.getElementById('chat-messages');
@@ -1017,18 +1659,20 @@
                         <div class="typing-dot"></div>
                     </div>
                     <span class="typing-text">Generating response...</span>
-                                        <button id="stop-btn-${Date.now()}" class="stop-poll-btn" 
-                                            style="background:transparent;border:1px solid var(--red);color:var(--red);
-                                            font-family:var(--font-mono);font-size:10px;padding:2px 10px;border-radius:5px;
-                                            cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:8px;transition:all 0.15s"
-                                            onclick="stopPolling(this)">
-                                            <i class="fas fa-stop" style="font-size:9px"></i> Stop
-                                        </button>                    
+                    <button id="stop-btn-${Date.now()}" class="stop-poll-btn" 
+                        style="background:transparent;border:1px solid var(--red);color:var(--red);
+                        font-family:var(--font-mono);font-size:10px;padding:2px 10px;border-radius:5px;
+                        cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:8px;transition:all 0.15s"
+                        onclick="stopPolling(this)">
+                        <i class="fas fa-stop" style="font-size:9px"></i> Stop
+                    </button>                    
                 </div>
             `;
 
             container.appendChild(wrapper);
-            container.scrollTop = container.scrollHeight;
+            if (autoScrollEnabled) {
+                container.scrollTop = container.scrollHeight;
+            }
             return wrapper;
         }
 
@@ -1037,7 +1681,7 @@
         }
 
         // ── MESSAGE BUBBLE ───────────────────────────────
-        function appendMessageBubble(role, content) {
+        function appendMessageBubble(role, content, messageId = null) {
             const container = document.getElementById('chat-messages');
 
             // remove empty state
@@ -1046,6 +1690,12 @@
 
             const wrapper = document.createElement('div');
             wrapper.className = `msg-wrapper ${role}`;
+            if (messageId) wrapper.id = `msg-${messageId}`;
+
+            // Generate timestamp
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const fullTimestamp = now.toISOString();
 
             if (role === 'user') {
                 wrapper.innerHTML = `
@@ -1055,24 +1705,20 @@
                     <div class="msg-bubble-user" style="position:relative">
                         ${escapeHtml(content)}
                     </div>
-                    <div style="display:flex;gap:6px;margin-top:5px;justify-content:flex-end">
-                        <button onclick="copyUserMessage(this)" title="Copy"
-                            style="background:var(--bg-elevated);border:1px solid var(--border-light);color:var(--text-muted);
-                                font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:6px;
-                                cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s"
-                            data-content="${escapeHtml(content).replace(/"/g, '&quot;')}">
-                            <i class="far fa-copy" style="font-size:10px"></i> Copy
+                    <div class="msg-timestamp" data-time="${fullTimestamp}">${timestamp}</div>
+                    <div class="msg-actions">
+                        <button class="msg-action-btn" onclick="editMessage(this)" title="Edit">
+                            <i class="fas fa-edit" style="font-size:9px"></i> Edit
                         </button>
-                        <button onclick="retryMessage(this)" title="Retry"
-                            style="background:var(--bg-elevated);border:1px solid var(--border-light);color:var(--text-muted);
-                                font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:6px;
-                                cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s"
-                            data-prompt="${escapeHtml(content).replace(/"/g, '&quot;')}">
+                        <button class="msg-action-btn" onclick="copyUserMessage(this)" title="Copy">
+                            <i class="far fa-copy" style="font-size:9px"></i> Copy
+                        </button>
+                        <button class="msg-action-btn" onclick="retryMessage(this)" title="Retry">
                             <i class="fas fa-redo" style="font-size:9px"></i> Retry
                         </button>
                     </div>
                 `;
-                } else {
+            } else {
                 const bubbleDiv = document.createElement('div');
                 bubbleDiv.className = 'msg-bubble-assistant markdown-body';
                 bubbleDiv.innerHTML = marked.parse(content);
@@ -1113,31 +1759,132 @@
                 labelDiv.className = 'msg-label owl';
                 labelDiv.innerHTML = '<i class="fas fa-crow" style="font-size:9px"></i> OWL';
 
-                // ✅ Copy entire response button
-                const copyAllBtn = document.createElement('button');
-                copyAllBtn.style.cssText = 'background:var(--bg-elevated);border:1px solid var(--border-light);color:var(--text-muted);font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;margin-top:8px;align-self:flex-start';
-                copyAllBtn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
-                copyAllBtn.onclick = async () => {
-                    try {
-                        await navigator.clipboard.writeText(content);
-                        copyAllBtn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
-                        setTimeout(() => {
-                            copyAllBtn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
-                        }, 2000);
-                    } catch(e) { console.error(e); }
-                };
+                // Timestamp
+                const timestampDiv = document.createElement('div');
+                timestampDiv.className = 'msg-timestamp';
+                timestampDiv.setAttribute('data-time', fullTimestamp);
+                timestampDiv.textContent = timestamp;
+
+                // Actions
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'msg-actions';
+                actionsDiv.innerHTML = `
+                    <button class="msg-action-btn" onclick="regenerateResponse(this)" title="Regenerate">
+                        <i class="fas fa-sync-alt" style="font-size:9px"></i> Regenerate
+                    </button>
+                    <button class="msg-action-btn" onclick="copyUserMessage(this)" title="Copy">
+                        <i class="far fa-copy" style="font-size:9px"></i> Copy
+                    </button>
+                `;
 
                 wrapper.appendChild(labelDiv);
                 wrapper.appendChild(bubbleDiv);
-                wrapper.appendChild(copyAllBtn);
+                wrapper.appendChild(timestampDiv);
+                wrapper.appendChild(actionsDiv);
                 container.appendChild(wrapper);
-                container.scrollTop = container.scrollHeight;
+                if (autoScrollEnabled) {
+                    container.scrollTop = container.scrollHeight;
+                }
                 return;
-
             }
 
             container.appendChild(wrapper);
-            container.scrollTop = container.scrollHeight;
+            if (autoScrollEnabled) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // ── Edit Message ────────────────────────────────
+        function editMessage(btn) {
+            const wrapper = btn.closest('.msg-wrapper');
+            const bubble = wrapper.querySelector('.msg-bubble-user');
+            const originalText = bubble.innerText;
+            
+            // Replace bubble with textarea
+            const textarea = document.createElement('textarea');
+            textarea.className = 'edit-textarea';
+            textarea.value = originalText;
+            textarea.rows = Math.max(2, originalText.split('\n').length);
+            
+            // Add edit actions
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'edit-actions';
+            actionsDiv.innerHTML = `
+                <button class="edit-cancel-btn" onclick="cancelEdit(this)">Cancel</button>
+                <button class="edit-save-btn" onclick="saveEdit(this)">Save & Send</button>
+            `;
+            
+            bubble.style.display = 'none';
+            bubble.parentNode.insertBefore(textarea, bubble.nextSibling);
+            textarea.parentNode.insertBefore(actionsDiv, textarea.nextSibling);
+            
+            textarea.focus();
+        }
+
+        function cancelEdit(btn) {
+            const wrapper = btn.closest('.msg-wrapper');
+            const bubble = wrapper.querySelector('.msg-bubble-user');
+            const textarea = wrapper.querySelector('.edit-textarea');
+            const actions = wrapper.querySelector('.edit-actions');
+            
+            bubble.style.display = 'block';
+            textarea.remove();
+            actions.remove();
+        }
+
+        function saveEdit(btn) {
+            const wrapper = btn.closest('.msg-wrapper');
+            const textarea = wrapper.querySelector('.edit-textarea');
+            const newText = textarea.value.trim();
+            
+            if (!newText) return;
+            
+            // Remove the edited message and all subsequent messages
+            const container = document.getElementById('chat-messages');
+            const allWrappers = container.querySelectorAll('.msg-wrapper');
+            let found = false;
+            allWrappers.forEach(w => {
+                if (w === wrapper) found = true;
+                if (found) w.remove();
+            });
+            
+            // Send new message
+            document.getElementById('prompt-input').value = newText;
+            document.getElementById('generation-form').requestSubmit();
+        }
+
+        // ── Regenerate Response ─────────────────────────
+        function regenerateResponse(btn) {
+            const wrapper = btn.closest('.msg-wrapper');
+            const container = document.getElementById('chat-messages');
+            
+            // Find the last user message before this assistant message
+            const allWrappers = container.querySelectorAll('.msg-wrapper');
+            let lastUserMessage = null;
+            
+            for (let i = allWrappers.length - 1; i >= 0; i--) {
+                if (allWrappers[i] === wrapper) continue;
+                if (allWrappers[i].classList.contains('user')) {
+                    lastUserMessage = allWrappers[i];
+                    break;
+                }
+            }
+            
+            if (!lastUserMessage) return;
+            
+            const bubble = lastUserMessage.querySelector('.msg-bubble-user');
+            const prompt = bubble.innerText;
+            
+            // Remove all messages from this assistant message onwards
+            let found = false;
+            allWrappers.forEach(w => {
+                if (w === wrapper) found = true;
+                if (found) w.remove();
+            });
+            
+            // Resend the message
+            document.getElementById('prompt-input').value = prompt;
+            document.getElementById('generation-form').requestSubmit();
         }
 
         function escapeHtml(str) {
@@ -1164,18 +1911,24 @@
 
         
         async function copyUserMessage(btn) {
-            const text = btn.getAttribute('data-content');
+            const wrapper = btn.closest('.msg-wrapper');
+            const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+            const text = bubble ? bubble.innerText : btn.getAttribute('data-content');
             try {
                 await navigator.clipboard.writeText(text);
+                const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
                 setTimeout(() => {
-                    btn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
+                    btn.innerHTML = originalHtml;
                 }, 2000);
             } catch(e) { console.error(e); }
         }
 
         async function retryMessage(btn) {
-            const prompt = btn.getAttribute('data-prompt');
+            const wrapper = btn.closest('.msg-wrapper');
+            const bubble = wrapper.querySelector('.msg-bubble-user');
+            const prompt = bubble ? bubble.innerText : btn.getAttribute('data-prompt');
+            
             if (!prompt || !activeSessionId) return;
 
             // remove last assistant response if exists
@@ -1230,12 +1983,7 @@
                 const res = await fetch(`/api/chat/${sessionId}/messages`);
                 const messages = await res.json();
                 if (messages.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon"><i class="fas fa-crow"></i></div>
-                            <span class="empty-state-text">Session initialized — Start a conversation</span>
-                        </div>
-                    `;
+                    showEmptyState();
                     return;
                 }
                 messages.forEach(m => {
@@ -1243,10 +1991,12 @@
                         const typingEl = showTypingIndicator();
                         pollMessageStatus(m.id, typingEl);
                     } else if (m.content) {
-                        appendMessageBubble(m.role, m.content);
+                        appendMessageBubble(m.role, m.content, m.id);
                     }
                 });
-                container.scrollTop = container.scrollHeight;
+                if (autoScrollEnabled) {
+                    container.scrollTop = container.scrollHeight;
+                }
             } catch (e) { console.error('[HYDRATE]', e); }
         }
 
