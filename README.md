@@ -93,7 +93,8 @@ pip install fastapi uvicorn sqlalchemy jinja2 python-decouple openai python-mult
 Create `.env` file in the project root:
 ```env
 OPENROUTER_API_KEY=sk-or-XXXXXXXXXXXXXXXXXXXXXXXX
-MAX_PROMPT_LENGTH=15000
+MAX_PROMPT_LENGTH=100000
+MAX_CONTEXT_TOKENS=100000
 ```
 
 ### 4. Run the Server
