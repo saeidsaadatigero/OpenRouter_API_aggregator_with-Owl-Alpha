@@ -86,7 +86,7 @@ source venv/bin/activate
 
 ### 2. Install Dependencies
 ```bash
-pip install fastapi uvicorn sqlalchemy jinja2 python-decouple openai python-multipart
+pip install -r requirements.txt
 ```
 
 ### 3. Configure Environment Variables
