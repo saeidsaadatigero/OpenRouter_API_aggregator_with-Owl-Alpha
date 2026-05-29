@@ -1,36 +1,143 @@
-<img width="1917" height="914" alt="image" src="https://github.com/user-attachments/assets/72d4f627-f7a3-4e9d-925e-18088010f96f" />
+
+<img width="1919" height="905" alt="Screenshot 2026-05-28" src="https://github.com/user-attachments/assets/11598ca5-b820-4a18-ac19-7f521b01fc2f" />
 
 <div align="center">
 
-# 🌌 OWL Studio — Intelligence Terminal
-### *Next-Gen Asynchronous AI Chat & Code Generation Engine*
+# 🌌 Agentic Code Studio
+### *Next-Gen Asynchronous Enterprise Code Generation Engine*
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-C11921?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
-[![Uvicorn](https://img.shields.io/badge/Uvicorn-ASGI-494949?style=for-the-badge&logo=gunicorn&logoColor=white)](https://www.uvicorn.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136.3-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.50-C11921?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
+[![Uvicorn](https://img.shields.io/badge/Uvicorn-0.48.0-494949?style=for-the-badge&logo=gunicorn&logoColor=white)](https://www.uvicorn.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge&logo=openai&logoColor=white)](https://openrouter.ai)
 
 <p align="center">
-  A high-performance, asynchronous AI chat studio powered by OpenRouter. Featuring real-time background task processing with polling, persistent multi-session chat history, path-traversal security sandboxing, and a cyberpunk dark-mode terminal interface.
+  A high-performance, asynchronous AI code generation studio powered by OpenRouter (Owl Alpha). 
+  Features real-time Server-Sent Events streaming, robust security sandboxing, intelligent circuit breaking, 
+  and persistent audit logging.
 </p>
 
-[✨ Core Features](#-core-features) • [🏗️ Architecture](#-architecture-blueprint) • [🚀 Quickstart](#-quickstart-pipeline) • [📁 Project Structure](#-system-directory-layout)
+[✨ Core Features](#-core-features) • [🏗️ Architecture](#️-architecture-blueprint) • [🚀 Quickstart](#-quickstart-pipeline) • [📁 Directory Structure](#-system-directory-layout)
 
 ---
 </div>
 
 ## ✨ Core Features
 
-* **💬 Multi-Session Chat Engine**: Create, rename, and delete chat sessions with persistent message history stored in SQLite via SQLAlchemy ORM.
-* **⚡ Background Task Processing**: Non-blocking LLM requests via FastAPI `BackgroundTasks` with frontend polling for real-time response delivery.
-* **🔄 Message Retry & Copy**: Retry failed responses and copy user messages or assistant code blocks to clipboard instantly.
-* **🛡️ Secure Workspace Sandboxing**: Structural filename validation (`..`, `/`, `~` mitigation) with target base directory lockouts preventing path traversal attacks.
-* **📊 Persistent Audit Trail**: Full conversation history, session metadata, and message status tracking (`pending` → `done`/`error`) in relational database.
-* **🎨 Cyberpunk Terminal UI**: Immersive dark-mode interface with syntax-highlighted code blocks, typing wave-bar animations, and glassmorphism effects.
+- **⚡ Real-Time SSE Token Streaming**: Asynchronous streaming from OpenRouter directly to the browser with zero blocking.
+- **🛡️ Secure Workspace Sandboxing**: Strong protection against path traversal attacks (`..`, `/`, `~`) with strict base directory enforcement.
+- **🔌 Intelligent Circuit Breaking**: Automatically cancels generation if the client disconnects to prevent unnecessary token usage.
+- **📊 Relational Audit Trail**: Full history of prompts and generated code stored persistently using SQLAlchemy + SQLite.
+- **🎨 Cyberpunk Dark UI**: Modern, high-contrast interface with live character counting, dynamic line counters, and instant copy functionality.
 
 ---
 
 ## 🏗️ Architecture Blueprint
 
-Decoupled three-tier architecture separating routing, business logic, and data persistence:
+```mermaid
+graph TD
+    Client[🎨 Client Browser] -->|POST Request| FastAPI[🛡️ FastAPI /main.py]
+    FastAPI -->|Validation & Sanitization| Service[⚙️ OpenRouter Service]
+    Service -->|Async Streaming| OpenRouter[🧠 OpenRouter Owl Alpha]
+    OpenRouter -->|Token Chunks| Service
+    Service -->|SSE Yield| Client
+    Service -->|Save Record| Database[(💾 SQLite Database)]
+    Service -->|Write Files| Sandbox[📂 generated_components/ Sandbox]
+```
+
+---
+
+## 🛠️ Technical Stack
+
+| Layer                    | Technology                        | Role |
+|-------------------------|-----------------------------------|------|
+| **Async Web Framework** | FastAPI + Uvicorn                 | High-performance API and SSE streaming |
+| **LLM Client**          | AsyncOpenAI                       | Optimized connection to OpenRouter |
+| **Database**            | SQLAlchemy 2.0 + SQLite           | Persistent generation history |
+| **Frontend**            | Jinja2 + Tailwind CSS             | Dynamic dark cyberpunk interface |
+| **Configuration**       | Python Decouple                   | Secure environment management |
+
+---
+
+# 📥  دانلود و نصب پیش‌نیازها
+مرورگر سرور را باز کنید و برنامه زیر را دانلود و نصب کنید:
+1. **[Python 3.12.10 (Stable)](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe)**: فایل `Windows installer (64-bit)` را مستقیماً دانلود کنید (این آخرین نسخه باینری رسمی پایتون 3.12 است). ⚠️ **بسیار مهم:** در اولین صفحه نصب، حتماً تیک **"Add Python.exe to PATH"** را بزنید و سپس Install Now را کلیک کنید.
+
+2. **[Git for Windows](https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe)**: فایل را اجرا کرده و فقط دکمه `Next` را تا انتها بزنید (تنظیمات پیش‌فرض عالی است).
+
+## 🚀 Quickstart Pipeline
+
+### 1. Clone & Setup Environment
+```bash
+git clone https://github.com/saeidsaadatigero/OpenRouter_API_aggregator_with-Owl-Alpha.git
+cd OpenRouter_API_aggregator_with-Owl-Alpha
+
+python -m venv venv
+
+# Windows
+.\venv\Scripts\Activate.ps1
+
+# Linux / macOS
+source venv/bin/activate
+```
+
+### 2. Install Dependencies
+```bash
+pip install fastapi uvicorn sqlalchemy jinja2 python-decouple openai python-multipart
+```
+
+### 3. Configure Environment Variables
+Create `.env` file in the project root:
+```env
+OPENROUTER_API_KEY=sk-or-XXXXXXXXXXXXXXXXXXXXXXXX
+MAX_PROMPT_LENGTH=15000
+```
+
+### 4. Run the Server
+```bash
+python -m uvicorn main:app --reload
+```
+
+Open your browser and go to: **`http://127.0.0.1:8000`**
+
+---
+
+## 📁 System Directory Layout
+
+```text
+.
+├── 📂 generated_components/          # Sandbox for generated code outputs
+├── 📂 services/
+│   └── 📄 openrouter_service.py      # Core OpenRouter orchestration logic
+├── 📂 static/
+│   └── 📂 css/
+│       └── 📄 style.css              # Custom styles & dark theme
+├── 📂 templates/
+│   └── 📄 index.html                 # Jinja2 main template
+├── 📄 database.py                    # SQLAlchemy setup & sessions
+├── 📄 models.py                      # Database models
+├── 📄 schemas.py                     # Pydantic validation schemas
+├── 📄 main.py                        # FastAPI application entrypoint
+├── 📄 .env                           # Environment variables
+└── 📄 openrouter_studio.db           # SQLite database file
+```
+
+---
+
+## 🛡️ Sandbox Security Architecture
+
+> [!IMPORTANT]
+> All file paths are strictly validated using `Path.resolve()` to prevent directory traversal:
+> 
+> ```python
+> safe_path = (TARGET_BASE_DIR / filename).resolve()
+> if not str(safe_path).startswith(str(TARGET_BASE_DIR)):
+>     raise HTTPException(status_code=400, detail="Security sandbox violation.")
+> ```
+
+---
+
+**Built with ❤️ for high-performance AI code generation**
+
+*Star the repository if you like the project! ⭐*
