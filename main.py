@@ -97,7 +97,13 @@ async def get_chat_messages_json(session_id: int, db: Session = Depends(get_db))
     chat_manager = ChatService(db)
     messages = chat_manager.get_session_messages(session_id)
     return [
-        {"id": m.id, "role": m.role, "content": m.content, "filename": getattr(m, 'filename', None)}
+        {
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "status": getattr(m, 'status', 'done'),
+            "filename": getattr(m, 'filename', None)
+        }
         for m in messages
     ]
 
@@ -125,7 +131,6 @@ async def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Target tracking thread context missing.")
 
 
-@app.post("/api/chat/{session_id}/send")
 def run_llm_in_background(message_id: int, messages_payload: list, model_name: str, api_key: str, base_url: str) -> None:
     """Runs synchronously in a thread — completely decoupled from the HTTP request lifecycle."""
     import asyncio
