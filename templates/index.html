@@ -1113,11 +1113,27 @@
                 labelDiv.className = 'msg-label owl';
                 labelDiv.innerHTML = '<i class="fas fa-crow" style="font-size:9px"></i> OWL';
 
+                // ✅ Copy entire response button
+                const copyAllBtn = document.createElement('button');
+                copyAllBtn.style.cssText = 'background:var(--bg-elevated);border:1px solid var(--border-light);color:var(--text-muted);font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;margin-top:8px;align-self:flex-start';
+                copyAllBtn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
+                copyAllBtn.onclick = async () => {
+                    try {
+                        await navigator.clipboard.writeText(content);
+                        copyAllBtn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
+                        setTimeout(() => {
+                            copyAllBtn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
+                        }, 2000);
+                    } catch(e) { console.error(e); }
+                };
+
                 wrapper.appendChild(labelDiv);
                 wrapper.appendChild(bubbleDiv);
+                wrapper.appendChild(copyAllBtn);
                 container.appendChild(wrapper);
                 container.scrollTop = container.scrollHeight;
                 return;
+
             }
 
             container.appendChild(wrapper);
