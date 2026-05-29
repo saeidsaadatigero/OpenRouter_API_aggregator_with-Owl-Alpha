@@ -60,11 +60,13 @@ graph TD
 
 ---
 
-# 📥  دانلود و نصب پیش‌نیازها
-مرورگر سرور را باز کنید و برنامه زیر را دانلود و نصب کنید:
-1. **[Python 3.12.10 (Stable)](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe)**: فایل `Windows installer (64-bit)` را مستقیماً دانلود کنید (این آخرین نسخه باینری رسمی پایتون 3.12 است). ⚠️ **بسیار مهم:** در اولین صفحه نصب، حتماً تیک **"Add Python.exe to PATH"** را بزنید و سپس Install Now را کلیک کنید.
+# 📥 Download and Install Prerequisites
 
-2. **[Git for Windows](https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe)**: فایل را اجرا کرده و فقط دکمه `Next` را تا انتها بزنید (تنظیمات پیش‌فرض عالی است).
+Open your browser and download and install the following programs:
+
+1. **[Python 3.12.10 (Stable)](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe)**: Download the `Windows installer (64-bit)` file directly (this is the latest official binary version of Python 3.12). ⚠️ **Very Important:** On the first installation screen, be sure to check **"Add Python.exe to PATH"** and then click Install Now.
+
+2. **[Git for Windows](https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe)**: Run the file and simply click `Next` until the end (default settings are excellent).
 
 ## 🚀 Quickstart Pipeline
 
