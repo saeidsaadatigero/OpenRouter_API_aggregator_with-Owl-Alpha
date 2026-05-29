@@ -89,7 +89,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 3. Configure API & Environment Variables
+**[Make OPENROUTER_API_KEY](https://openrouter.ai/)**
+
 Create `.env` file in the project root:
 ```env
 OPENROUTER_API_KEY=sk-or-XXXXXXXXXXXXXXXXXXXXXXXX
