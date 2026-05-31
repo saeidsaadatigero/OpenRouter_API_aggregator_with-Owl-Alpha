@@ -1,4 +1,3 @@
-# services/openrouter_service.py
 import os
 import logging
 from typing import AsyncGenerator
@@ -18,7 +17,6 @@ class OpenRouterCodingService:
             logger.error("[CRITICAL] OPENROUTER_API_KEY configuration token is missing from environment.")
             raise ValueError("OPENROUTER_API_KEY is missing from environment.")
             
-        # Upgrade client stack to AsyncOpenAI for non-blocking stream handling
         self.client = AsyncOpenAI(
             base_url=self.base_url,
             api_key=self.api_key,
@@ -29,12 +27,7 @@ class OpenRouterCodingService:
         )
 
     async def generate_code_stream(self, prompt: str) -> AsyncGenerator[str, None]:
-        """Invokes upstream cluster and yields tokens asynchronously."""
-        system_instruction = (
-            "You are OWL, a Senior Python/AI Engineer. Output clean, robust, OOP-compliant code "
-            "with strict type hints. Do NOT include markdown blocks like ```python or ```, "
-            "do NOT include conversational explanations or prose text. Output ONLY valid, raw executable code."
-        )
+        system_instruction = self._get_active_instruction_content()
         
         logger.info(f"[OPENROUTER] Opening upstream network socket stream for model: {self.model_name}")
         try:
@@ -46,7 +39,7 @@ class OpenRouterCodingService:
                 ],
                 temperature=0.2,
                 max_tokens=4000,
-                stream=True  # Enables raw token chunk streaming
+                stream=True
             )
             
             async for chunk in response:
@@ -58,7 +51,6 @@ class OpenRouterCodingService:
             raise e
         
     async def generate_safe_filename(self, user_prompt: str) -> str:
-        """Invokes upstream LLM to dynamically determine a secure, context-aware filename based on the prompt."""
         try:
             system_instruction = (
                 "Analyze the user request and output ONLY a single valid, safe filename with an appropriate extension "
@@ -76,9 +68,30 @@ class OpenRouterCodingService:
                 stream=False
             )
             generated_name = response.choices[0].message.content.strip()
-            # Clean potential markdown wrapping artifacts
             generated_name = generated_name.replace("`", "").replace("'", "").replace('"', "")
             return generated_name if generated_name else "component.py"
         except Exception as llm_err:
             logging.getLogger(__name__).error(f"[AUTO-NAME-ERROR] Failed to infer filename: {str(llm_err)}")
             return "component.py"
+
+    def _get_active_instruction_content(self) -> str:
+        try:
+            from database import SessionLocal
+            from services.instruction_service import InstructionService
+            
+            db = SessionLocal()
+            try:
+                instruction_service = InstructionService(db)
+                instruction = instruction_service.get_active_instruction()
+                if instruction:
+                    return instruction.content
+                return self._get_default_instruction()
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"[INSTRUCTION-ERROR] Failed to get active instruction: {e}")
+            return self._get_default_instruction()
+
+    def _get_default_instruction(self) -> str:
+        return """You are OWL, a Senior Python/AI Engineer and coding assistant. 
+Answer clearly and helpfully. Use markdown for code blocks."""

@@ -1,4 +1,3 @@
-# services/chat_service.py
 import logging
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
@@ -6,6 +5,7 @@ import models
 import schemas
 
 logger = logging.getLogger(__name__)
+
 
 class ChatService:
     def __init__(self, db: Session) -> None:
@@ -38,7 +38,6 @@ class ChatService:
         )
         self.db.add(message_record)
         
-        # Touch the session to update its updated_at column for history sorting
         session_record = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
         if session_record:
             session_record.updated_at = models.datetime.utcnow()
@@ -50,7 +49,6 @@ class ChatService:
     def update_session_title_fallback(self, session_id: int, initial_prompt: str) -> None:
         session_record = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
         if session_record and (session_record.title == "New Chat Workspace" or not session_record.title):
-            # Compute slick dynamic title from initial contextual user input token boundaries
             computed_title = initial_prompt[:40] + "..." if len(initial_prompt) > 40 else initial_prompt
             session_record.title = computed_title
             self.db.commit()
@@ -62,7 +60,6 @@ class ChatService:
         return payload
 
     def rename_session(self, session_id: int, new_title: str) -> bool:
-        """Updates the title of a specific chat session."""
         session = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
         if session:
             session.title = new_title
@@ -71,7 +68,6 @@ class ChatService:
         return False
 
     def delete_session(self, session_id: int) -> bool:
-        """Deletes a chat session and cascades cleanup to associated messages."""
         session = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
         if session:
             self.db.delete(session)
@@ -80,7 +76,6 @@ class ChatService:
         return False
     
     def add_pending_message(self, session_id: int, role: str) -> models.ChatMessage:
-        """Creates a placeholder assistant message with pending status."""
         msg = models.ChatMessage(
             session_id=session_id,
             role=role,
@@ -93,9 +88,8 @@ class ChatService:
         return msg
 
     def update_message_content(self, message_id: int, content: str, status: str = "done") -> None:
-        """Updates content and status of an existing message after background processing."""
         msg = self.db.query(models.ChatMessage).filter(models.ChatMessage.id == message_id).first()
         if msg:
             msg.content = content
             msg.status = status
-            self.db.commit()    
+            self.db.commit()

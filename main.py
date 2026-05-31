@@ -1,4 +1,3 @@
-# main.py
 import os
 import json
 import logging
@@ -20,6 +19,7 @@ import models
 from database import engine, get_db
 from services.openrouter_service import OpenRouterCodingService
 from services.chat_service import ChatService
+from services.instruction_service import InstructionService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +29,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
+
+# Initialize default instruction on startup
+db_init = SessionLocal()
+try:
+    instruction_service_init = InstructionService(db_init)
+    instruction_service_init.initialize_default_instruction()
+finally:
+    db_init.close()
 
 app = FastAPI(title="OpenRouter Studio Core")
 
@@ -44,7 +52,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 coder_service = OpenRouterCodingService()
 
-MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=100000, cast=int)
+MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
 MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css', '.txt'}
 TARGET_BASE_DIR = Path("generated_components").resolve()
@@ -58,6 +66,18 @@ class ChatSendPayload(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=100000)
 
 
+class InstructionPayload(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    content: str = Field(..., min_length=1)
+    is_active: bool = Field(default=True)
+
+
+class InstructionUpdatePayload(BaseModel):
+    title: str = Field(default=None, min_length=1, max_length=255)
+    content: str = Field(default=None, min_length=1)
+    is_active: bool = Field(default=None)
+
+
 def validate_filename(filename: str) -> bool:
     if not filename or len(filename) > MAX_FILENAME_LENGTH:
         return False
@@ -67,6 +87,15 @@ def validate_filename(filename: str) -> bool:
     if ext not in ALLOWED_EXTENSIONS and ext != '':
         return False
     return True
+
+
+def get_active_instruction_content(db: Session) -> str:
+    """Get the active system instruction content from database."""
+    service = InstructionService(db)
+    instruction = service.get_active_instruction()
+    if instruction:
+        return instruction.content
+    return ""
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -131,8 +160,115 @@ async def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Target tracking thread context missing.")
 
 
+@app.get("/api/instructions")
+async def get_all_instructions(db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    instructions = service.get_all_instructions()
+    return [
+        {
+            "id": inst.id,
+            "title": inst.title,
+            "content": inst.content,
+            "is_active": inst.is_active,
+            "created_at": inst.created_at.isoformat(),
+            "updated_at": inst.updated_at.isoformat()
+        }
+        for inst in instructions
+    ]
+
+
+@app.get("/api/instructions/active")
+async def get_active_instruction(db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    instruction = service.get_active_instruction()
+    if not instruction:
+        instruction = service.initialize_default_instruction()
+    return {
+        "id": instruction.id,
+        "title": instruction.title,
+        "content": instruction.content,
+        "is_active": instruction.is_active,
+        "created_at": instruction.created_at.isoformat(),
+        "updated_at": instruction.updated_at.isoformat()
+    }
+
+
+@app.get("/api/instructions/{instruction_id}")
+async def get_instruction_by_id(instruction_id: int, db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    instruction = service.get_instruction_by_id(instruction_id)
+    if not instruction:
+        raise HTTPException(status_code=404, detail="Instruction not found.")
+    return {
+        "id": instruction.id,
+        "title": instruction.title,
+        "content": instruction.content,
+        "is_active": instruction.is_active,
+        "created_at": instruction.created_at.isoformat(),
+        "updated_at": instruction.updated_at.isoformat()
+    }
+
+
+@app.post("/api/instructions")
+async def create_instruction(payload: InstructionPayload, db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    instruction = service.create_instruction(
+        title=payload.title,
+        content=payload.content,
+        is_active=payload.is_active
+    )
+    return {
+        "status": "success",
+        "message": "Instruction created successfully.",
+        "id": instruction.id
+    }
+
+
+@app.put("/api/instructions/{instruction_id}")
+async def update_instruction(instruction_id: int, payload: InstructionUpdatePayload, db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    instruction = service.update_instruction(
+        instruction_id=instruction_id,
+        title=payload.title,
+        content=payload.content,
+        is_active=payload.is_active
+    )
+    if not instruction:
+        raise HTTPException(status_code=404, detail="Instruction not found.")
+    return {
+        "status": "success",
+        "message": "Instruction updated successfully."
+    }
+
+
+@app.delete("/api/instructions/{instruction_id}")
+async def delete_instruction(instruction_id: int, db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    if service.delete_instruction(instruction_id):
+        return {"status": "success", "message": "Instruction deleted successfully."}
+    raise HTTPException(status_code=404, detail="Instruction not found.")
+
+
+@app.post("/api/instructions/{instruction_id}/activate")
+async def activate_instruction(instruction_id: int, db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    if service.set_active(instruction_id):
+        return {"status": "success", "message": "Instruction activated successfully."}
+    raise HTTPException(status_code=404, detail="Instruction not found.")
+
+
+@app.post("/api/instructions/initialize-default")
+async def initialize_default_instruction(db: Session = Depends(get_db)):
+    service = InstructionService(db)
+    instruction = service.initialize_default_instruction()
+    return {
+        "status": "success",
+        "message": "Default instruction initialized.",
+        "id": instruction.id
+    }
+
+
 def run_llm_in_background(message_id: int, messages_payload: list, model_name: str, api_key: str, base_url: str) -> None:
-    """Runs synchronously in a thread — completely decoupled from the HTTP request lifecycle."""
     import asyncio
     from openai import AsyncOpenAI
 
@@ -178,18 +314,18 @@ async def handle_chat_send(
     chat_manager.update_session_title_fallback(session_id, payload.prompt)
     chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt, status="done")
 
+    # Get active system instruction
+    system_instruction = get_active_instruction_content(db)
+    
     # Build history BEFORE creating pending message
     history = chat_manager.get_session_messages(session_id)
-    system_instruction = (
-        "You are OWL, a Senior Python/AI Engineer and coding assistant. "
-        "Answer clearly and helpfully. Use markdown for code blocks."
-    )
+    
     messages_payload = [{"role": "system", "content": system_instruction}]
     for msg in history:
         if msg.status == "done" and msg.content:
             messages_payload.append({"role": msg.role, "content": msg.content})
 
-    # Create placeholder — frontend polls this ID
+    # Create placeholder
     pending_msg = chat_manager.add_pending_message(session_id=session_id, role="assistant")
 
     background_tasks.add_task(
@@ -232,17 +368,15 @@ async def handle_chat_generation(
     chat_manager.update_session_title_fallback(session_id, prompt)
     chat_manager.add_message(session_id=session_id, role="user", content=prompt)
 
+    # Get active system instruction
+    system_instruction = get_active_instruction_content(db)
+
     async def chat_event_generator() -> AsyncGenerator[str, None]:
         accumulated_chunks = []
         try:
             history_messages = chat_manager.get_session_messages(session_id)
             payload_messages = []
 
-            system_instruction = (
-                "You are OWL, a Senior Python/AI Engineer. Output clean, robust, OOP-compliant code "
-                "with strict type hints. Do NOT include markdown blocks like ```python or ```, "
-                "do NOT include conversational explanations or prose text. Output ONLY valid, raw executable code."
-            )
             payload_messages.append({"role": "system", "content": system_instruction})
 
             for msg in history_messages:
@@ -294,9 +428,9 @@ async def handle_chat_generation(
 
     return StreamingResponse(chat_event_generator(), media_type="text/event-stream")
 
+
 @app.get("/api/message/{message_id}/status")
 async def get_message_status(message_id: int, db: Session = Depends(get_db)):
-    """Frontend polls this every 2s to check if background LLM task is done."""
     from models import ChatMessage
     msg = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
     if not msg:
@@ -306,3 +440,8 @@ async def get_message_status(message_id: int, db: Session = Depends(get_db)):
         "status": msg.status,
         "content": msg.content if msg.status in ("done", "error") else None
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OWL Studio — Intelligence Terminal</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%236366f1'/><stop offset='100%25' stop-color='%23a855f7'/></linearGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' dy='.1em'>🌌</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80' x='50%' text-anchor='middle'>🦉</text></svg>">
     <meta name="theme-color" content="#6366f1">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,7 +38,6 @@
             --font-mono:    'JetBrains Mono', monospace;
         }
 
-        /* Light Theme */
         [data-theme="light"] {
             --bg-base:      #f8f9fa;
             --bg-surface:   #ffffff;
@@ -298,7 +297,6 @@
             transition: background 0.3s ease;
         }
 
-        /* subtle grid bg */
         main::before {
             content: '';
             position: absolute;
@@ -382,7 +380,6 @@
             letter-spacing: 0.05em;
         }
 
-        /* Theme Toggle Button */
         .theme-toggle {
             width: 32px;
             height: 32px;
@@ -467,7 +464,6 @@
             opacity: 0.6;
         }
 
-        /* assistant label */
         .msg-label {
             font-family: var(--font-mono);
             font-size: 10px;
@@ -482,7 +478,6 @@
         .msg-label.owl { color: var(--accent-soft); }
         .msg-label.you { color: var(--text-dim); }
 
-        /* Message Timestamp */
         .msg-timestamp {
             font-family: var(--font-mono);
             font-size: 9px;
@@ -500,7 +495,6 @@
             text-align: right;
         }
 
-        /* Message Actions */
         .msg-actions {
             display: flex;
             gap: 6px;
@@ -543,7 +537,6 @@
             border-color: var(--red);
         }
 
-        /* markdown inside assistant bubbles */
         .msg-bubble-assistant h1, .msg-bubble-assistant h2, .msg-bubble-assistant h3 {
             font-family: var(--font-ui);
             font-weight: 700;
@@ -581,7 +574,6 @@
 
         [data-theme="light"] .hljs { background: #f8f9fa !important; color: #212529 !important; }
 
-        /* code block */
         .code-block-wrapper {
             margin: 12px 0;
             border-radius: 10px;
@@ -705,7 +697,6 @@
             letter-spacing: 0.04em;
         }
 
-        /* wave bar animation */
         .typing-bars {
             display: flex;
             align-items: center;
@@ -776,20 +767,8 @@
             animation: skeleton-pulse 1.5s infinite;
         }
 
-        .skeleton-item.user {
-            align-items: flex-end;
-        }
-
-        .skeleton-item.assistant {
-            align-items: flex-start;
-        }
-
-        .skeleton-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            background: var(--bg-elevated);
-        }
+        .skeleton-item.user { align-items: flex-end; }
+        .skeleton-item.assistant { align-items: flex-start; }
 
         .skeleton-bubble {
             height: 48px;
@@ -805,14 +784,8 @@
             background-size: 200% 100%;
         }
 
-        .skeleton-bubble.assistant {
-            width: 400px;
-        }
-
-        .skeleton-bubble.assistant.small {
-            width: 250px;
-            height: 80px;
-        }
+        .skeleton-bubble.assistant { width: 400px; }
+        .skeleton-bubble.assistant.small { width: 250px; height: 80px; }
 
         @keyframes skeleton-shimmer {
             0% { background-position: 200% 0; }
@@ -911,15 +884,9 @@
             color: var(--text-dim);
         }
 
-        .char-counter.warning {
-            color: var(--yellow);
-        }
+        .char-counter.warning { color: var(--yellow); }
+        .char-counter.danger { color: var(--red); }
 
-        .char-counter.danger {
-            color: var(--red);
-        }
-
-        /* Auto-scroll Toggle */
         .auto-scroll-toggle {
             display: flex;
             align-items: center;
@@ -927,9 +894,7 @@
             cursor: pointer;
         }
 
-        .auto-scroll-toggle input {
-            display: none;
-        }
+        .auto-scroll-toggle input { display: none; }
 
         .toggle-slider {
             width: 28px;
@@ -952,21 +917,12 @@
             transition: all 0.2s;
         }
 
-        .auto-scroll-toggle input:checked + .toggle-slider {
-            background: var(--accent);
-        }
+        .auto-scroll-toggle input:checked + .toggle-slider { background: var(--accent); }
+        .auto-scroll-toggle input:checked + .toggle-slider::after { left: 14px; background: #fff; }
 
-        .auto-scroll-toggle input:checked + .toggle-slider::after {
-            left: 14px;
-            background: #fff;
-        }
+        .toggle-label { font-size: 10px; color: var(--text-dim); }
 
-        .toggle-label {
-            font-size: 10px;
-            color: var(--text-dim);
-        }
-
-        /* ── SCROLL TO BOTTOM BUTTON ─────────────── */
+        /* ── SCROLL TO BOTTOM ───────────────────── */
         .scroll-bottom-btn {
             position: fixed;
             bottom: 100px;
@@ -1105,9 +1061,7 @@
             display: none;
         }
 
-        .export-menu.open {
-            display: block;
-        }
+        .export-menu.open { display: block; }
 
         .export-item {
             width: 100%;
@@ -1127,14 +1081,12 @@
             transition: background 0.15s;
         }
 
-        .export-item:hover {
-            background: var(--bg-hover);
-        }
+        .export-item:hover { background: var(--bg-hover); }
 
         /* ── EDIT MESSAGE TEXTAREA ───────────────── */
         .edit-textarea {
             width: 100%;
-            min-width: 580px;
+            min-width: 200px;
             max-width: 580px;
             background: var(--bg-surface);
             border: 1.5px solid var(--accent);
@@ -1145,7 +1097,7 @@
             color: var(--text-primary);
             outline: none;
             resize: vertical;
-            min-height: 150px;
+            min-height: 20px;
             max-height: 300px;
             line-height: 1.6;
             margin-top: 8px;
@@ -1176,9 +1128,7 @@
             transition: all 0.15s;
         }
 
-        .edit-save-btn:hover {
-            background: #5b4fcf;
-        }
+        .edit-save-btn:hover { background: #5b4fcf; }
 
         .edit-cancel-btn {
             padding: 6px 14px;
@@ -1193,8 +1143,343 @@
             transition: all 0.15s;
         }
 
-        .edit-cancel-btn:hover {
+        .edit-cancel-btn:hover { background: var(--bg-hover); }
+
+        /* ── SETTINGS MODAL ───────────────────────── */
+        #settings-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #settings-modal-backdrop.open { display: flex; }
+
+        .settings-modal-surface {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            width: 100%;
+            max-width: 700px;
+            max-height: 80vh;
+            border-radius: 16px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+            animation: modal-in 0.2s cubic-bezier(0.2, 0, 0, 1) both;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .settings-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-modal-title {
+            font-family: var(--font-ui);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .settings-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .settings-close-btn:hover {
             background: var(--bg-hover);
+            color: var(--red);
+        }
+
+        .settings-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .settings-tab {
+            padding: 8px 16px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .settings-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .settings-tab.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .settings-tab-content {
+            display: none;
+        }
+
+        .settings-tab-content.active {
+            display: block;
+        }
+
+        .settings-form-group {
+            margin-bottom: 16px;
+        }
+
+        .settings-label {
+            display: block;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .settings-input {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-light);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .settings-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow2);
+        }
+
+        .settings-textarea {
+            width: 100%;
+            min-height: 300px;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-light);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-primary);
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        .settings-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow2);
+        }
+
+        .settings-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .settings-checkbox-label input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .settings-btn {
+            padding: 10px 20px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent), #5b4fcf);
+            border: none;
+            box-shadow: 0 2px 12px rgba(124,106,247,0.3);
+        }
+
+        .settings-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(124,106,247,0.45);
+        }
+
+        .settings-btn-secondary {
+            color: var(--text-muted);
+            background: transparent;
+            border: 1px solid var(--border-light);
+        }
+
+        .settings-btn-secondary:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .settings-btn-danger {
+            color: var(--red);
+            background: transparent;
+            border: 1px solid var(--red);
+        }
+
+        .settings-btn-danger:hover {
+            background: rgba(240, 86, 122, 0.1);
+        }
+
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .settings-list-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            transition: all 0.15s;
+        }
+
+        .settings-list-item:hover {
+            border-color: var(--accent);
+        }
+
+        .settings-list-item.active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .settings-list-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .settings-list-item-title {
+            font-family: var(--font-ui);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .settings-list-item-badge {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .settings-list-item-preview {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 12px;
+        }
+
+        .settings-list-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .settings-list-item-btn {
+            padding: 6px 12px;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .settings-list-item-btn.edit {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+            border: 1px solid var(--border-light);
+        }
+
+        .settings-list-item-btn.edit:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .settings-list-item-btn.activate {
+            color: var(--green);
+            background: transparent;
+            border: 1px solid var(--green);
+        }
+
+        .settings-list-item-btn.activate:hover {
+            background: rgba(61, 214, 140, 0.1);
+        }
+
+        .settings-list-item-btn.delete {
+            color: var(--red);
+            background: transparent;
+            border: 1px solid var(--red);
+        }
+
+        .settings-list-item-btn.delete:hover {
+            background: rgba(240, 86, 122, 0.1);
         }
     </style>
 </head>
@@ -1266,6 +1551,9 @@
             <div class="header-right">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
                     <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+                <button class="theme-toggle" onclick="openSettingsModal()" title="System Instructions">
+                    <i class="fas fa-cog"></i>
                 </button>
                 <div style="position:relative;">
                     <button class="theme-toggle" onclick="toggleExportMenu()" title="Export Chat">
@@ -1345,12 +1633,74 @@
         </div>
     </div>
 
+    <!-- ── SETTINGS MODAL ───────────────────────── -->
+    <div id="settings-modal-backdrop">
+        <div class="settings-modal-surface">
+            <div class="settings-modal-header">
+                <p class="settings-modal-title">⚙️ System Instructions</p>
+                <button onclick="closeSettingsModal()" class="settings-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="settings-modal-body">
+                <!-- Instruction Tabs -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" onclick="switchSettingsTab('current', this)">Current</button>
+                    <button class="settings-tab" onclick="switchSettingsTab('manage', this)">Manage</button>
+                </div>
+                
+                <!-- Current Instruction Tab -->
+                <div id="settings-tab-current" class="settings-tab-content active">
+                    <div class="settings-form-group">
+                        <label class="settings-label">Title</label>
+                        <input type="text" id="instruction-title" class="settings-input" placeholder="Instruction title...">
+                    </div>
+                    
+                    <div class="settings-form-group">
+                        <label class="settings-label">Instructions Content</label>
+                        <textarea id="instruction-content" class="settings-textarea" placeholder="Enter your system instructions here..."></textarea>
+                    </div>
+                    
+                    <div class="settings-form-group">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="instruction-active" checked>
+                            <span>Set as Active</span>
+                        </label>
+                    </div>
+                    
+                    <div class="settings-actions">
+                        <button onclick="saveInstruction()" class="settings-btn settings-btn-primary">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button onclick="resetToDefault()" class="settings-btn settings-btn-secondary">
+                            <i class="fas fa-undo"></i> Reset to Default
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Manage Instructions Tab -->
+                <div id="settings-tab-manage" class="settings-tab-content">
+                    <div class="settings-list" id="instructions-list">
+                        <!-- Instructions will be loaded here -->
+                    </div>
+                    <div class="settings-actions">
+                        <button onclick="createNewInstruction()" class="settings-btn settings-btn-primary">
+                            <i class="fas fa-plus"></i> New Instruction
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const activeSessionId = "{{ active_session_id or '' }}";
         let currentEditingChatId = null;
         let originalChatTitle = "";
         let messageTimestamps = {};
         let autoScrollEnabled = true;
+        let currentEditingInstructionId = null;
 
         // ── Theme Toggle ───────────────────────────────
         function toggleTheme() {
@@ -1400,7 +1750,6 @@
             }
 
             let content = '';
-            const timestamp = new Date().toISOString();
 
             if (format === 'json') {
                 const data = [];
@@ -1455,7 +1804,7 @@
         }
 
         // ── Character Counter ──────────────────────────
-        const MAX_CHARS = 100000;
+        const MAX_CHARS = 15000;
 
         function updateCharCounter() {
             const textarea = document.getElementById('prompt-input');
@@ -1956,7 +2305,6 @@
                 const data = await response.json();
 
                 if (data.status === 'processing' && data.message_id) {
-                    // Poll until done — survives refresh because work is in background
                     pollMessageStatus(data.message_id, typingEl);
                 } else {
                     const reply = data.response || data.content || "No response received.";
@@ -2116,6 +2464,192 @@
             removeTypingIndicator(wrapper);
             appendMessageBubble('assistant', '⏹ *Generation stopped by user.*');
         }
+
+        // ── SETTINGS MODAL ───────────────────────────
+        function openSettingsModal() {
+            document.getElementById('settings-modal-backdrop').classList.add('open');
+            loadActiveInstruction();
+            loadInstructionsList();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal-backdrop').classList.remove('open');
+            currentEditingInstructionId = null;
+        }
+
+        function switchSettingsTab(tab, btn) {
+            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(`settings-tab-${tab}`).classList.add('active');
+        }
+
+        // Load active instruction
+        async function loadActiveInstruction() {
+            try {
+                const res = await fetch('/api/instructions/active');
+                const data = await res.json();
+                
+                document.getElementById('instruction-title').value = data.title;
+                document.getElementById('instruction-content').value = data.content;
+                document.getElementById('instruction-active').checked = data.is_active;
+                currentEditingInstructionId = data.id;
+            } catch (e) {
+                console.error('[LOAD-INSTRUCTION]', e);
+            }
+        }
+
+        // Save instruction
+        async function saveInstruction() {
+            const title = document.getElementById('instruction-title').value.trim();
+            const content = document.getElementById('instruction-content').value.trim();
+            const isActive = document.getElementById('instruction-active').checked;
+            
+            if (!title || !content) {
+                alert('Title and content are required!');
+                return;
+            }
+            
+            try {
+                let res;
+                if (currentEditingInstructionId) {
+                    res = await fetch(`/api/instructions/${currentEditingInstructionId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content, is_active: isActive })
+                    });
+                } else {
+                    res = await fetch('/api/instructions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content, is_active: isActive })
+                    });
+                }
+                
+                if (res.ok) {
+                    alert('Instruction saved successfully!');
+                    loadInstructionsList();
+                } else {
+                    throw new Error('Failed to save');
+                }
+            } catch (e) {
+                console.error('[SAVE-INSTRUCTION]', e);
+                alert('Failed to save instruction.');
+            }
+        }
+
+        // Reset to default
+        async function resetToDefault() {
+            if (!confirm('Reset to default instructions? This will overwrite current content.')) return;
+            
+            try {
+                const res = await fetch('/api/instructions/initialize-default', { method: 'POST' });
+                if (res.ok) {
+                    loadActiveInstruction();
+                    alert('Default instructions restored!');
+                }
+            } catch (e) {
+                console.error('[RESET-INSTRUCTION]', e);
+            }
+        }
+
+        // Load instructions list
+        async function loadInstructionsList() {
+            try {
+                const res = await fetch('/api/instructions');
+                const instructions = await res.json();
+                
+                const listContainer = document.getElementById('instructions-list');
+                listContainer.innerHTML = instructions.map(inst => `
+                    <div class="settings-list-item ${inst.is_active ? 'active' : ''}">
+                        <div class="settings-list-item-header">
+                            <span class="settings-list-item-title">${escapeHtml(inst.title)}</span>
+                            ${inst.is_active ? '<span class="settings-list-item-badge">Active</span>' : ''}
+                        </div>
+                        <div class="settings-list-item-preview">${escapeHtml(inst.content.substring(0, 100))}...</div>
+                        <div class="settings-list-item-actions">
+                            <button class="settings-list-item-btn edit" onclick="editInstruction(${inst.id})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            ${!inst.is_active ? `
+                                <button class="settings-list-item-btn activate" onclick="activateInstruction(${inst.id})">
+                                    <i class="fas fa-check"></i> Activate
+                                </button>
+                            ` : ''}
+                            <button class="settings-list-item-btn delete" onclick="deleteInstruction(${inst.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('[LOAD-INSTRUCTIONS]', e);
+            }
+        }
+
+        // Edit instruction
+        async function editInstruction(id) {
+            try {
+                const res = await fetch(`/api/instructions/${id}`);
+                const data = await res.json();
+                
+                document.getElementById('instruction-title').value = data.title;
+                document.getElementById('instruction-content').value = data.content;
+                document.getElementById('instruction-active').checked = data.is_active;
+                currentEditingInstructionId = id;
+                
+                // Switch to current tab
+                document.querySelectorAll('.settings-tab')[0].click();
+            } catch (e) {
+                console.error('[EDIT-INSTRUCTION]', e);
+            }
+        }
+
+        // Activate instruction
+        async function activateInstruction(id) {
+            try {
+                const res = await fetch(`/api/instructions/${id}/activate`, { method: 'POST' });
+                if (res.ok) {
+                    loadInstructionsList();
+                    loadActiveInstruction();
+                }
+            } catch (e) {
+                console.error('[ACTIVATE-INSTRUCTION]', e);
+            }
+        }
+
+        // Delete instruction
+        async function deleteInstruction(id) {
+            if (!confirm('Delete this instruction?')) return;
+            
+            try {
+                const res = await fetch(`/api/instructions/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadInstructionsList();
+                }
+            } catch (e) {
+                console.error('[DELETE-INSTRUCTION]', e);
+            }
+        }
+
+        // Create new instruction
+        function createNewInstruction() {
+            currentEditingInstructionId = null;
+            document.getElementById('instruction-title').value = '';
+            document.getElementById('instruction-content').value = '';
+            document.getElementById('instruction-active').checked = false;
+            
+            // Switch to current tab
+            document.querySelectorAll('.settings-tab')[0].click();
+        }
+
+        // Close settings modal on outside click
+        document.getElementById('settings-modal-backdrop').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeSettingsModal();
+            }
+        });
     </script>
 </body>
 </html>
