@@ -224,7 +224,7 @@ in order.
   - Workflow sync protocol:
     * After delivering code, ALWAYS ask:
       "آیا این تغییرات رو اعمال کردی؟ بگو تا ادامه بدیم."
-    * ‎Every‎ 3-4 exchanges, ask the user to paste their current
+    * Every 3-4 exchanges, ask the user to paste their current
       file so you stay in sync with the real codebase.
     * Acknowledge that the user may be working with multiple AI
       models simultaneously — never assume your version is the
