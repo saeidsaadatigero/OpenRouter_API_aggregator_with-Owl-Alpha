@@ -98,6 +98,15 @@ def get_active_instruction_content(db: Session) -> str:
     return ""
 
 
+@app.get("/api/config")
+async def get_config():
+    """Get frontend configuration."""
+    return {
+        "max_prompt_length": MAX_PROMPT_LENGTH,
+        "max_chars": config("MAX_CHARS", default=100000, cast=int)
+    }
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index_view(request: Request, db: Session = Depends(get_db)):
     chat_manager = ChatService(db)
@@ -269,11 +278,13 @@ async def initialize_default_instruction(db: Session = Depends(get_db)):
 
 
 def run_llm_in_background(message_id: int, messages_payload: list, model_name: str, api_key: str, base_url: str) -> None:
+    """Runs synchronously in a thread — completely decoupled from the HTTP request lifecycle."""
     import asyncio
     from openai import AsyncOpenAI
 
     async def _call():
         db: DBSession = SessionLocal()
+        client = None
         try:
             client = AsyncOpenAI(
                 base_url=base_url,
@@ -284,7 +295,7 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
                 model=model_name,
                 messages=messages_payload,
                 temperature=0.3,
-                max_tokens=8000,
+                max_tokens=16000,  # برای پاسخ‌های طولانی
                 stream=False
             )
             reply = response.choices[0].message.content.strip()
@@ -296,9 +307,23 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
             chat_svc = ChatService(db)
             chat_svc.update_message_content(message_id, f"⚠️ Error: {str(e)}", status="error")
         finally:
+            if client:
+                try:
+                    await client.close()
+                except:
+                    pass
             db.close()
 
-    asyncio.run(_call())
+    try:
+        asyncio.run(_call())
+    except RuntimeError:
+        # Event loop is closed, create a new one
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(_call())
+        finally:
+            loop.close()
 
 
 @app.post("/api/chat/{session_id}/send")
@@ -388,7 +413,7 @@ async def handle_chat_generation(
                 model=coder_service.model_name,
                 messages=payload_messages,
                 temperature=0.2,
-                max_tokens=4000,
+                max_tokens=16000,  # برای پاسخ‌های طولانی
                 stream=True
             )
 
@@ -431,6 +456,7 @@ async def handle_chat_generation(
 
 @app.get("/api/message/{message_id}/status")
 async def get_message_status(message_id: int, db: Session = Depends(get_db)):
+    """Frontend polls this every 2s to check if background LLM task is done."""
     from models import ChatMessage
     msg = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
     if not msg:

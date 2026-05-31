@@ -347,11 +347,12 @@
         .header-title {
             font-family: var(--font-ui);
             font-weight: 700;
-            font-size: 13px;
+            font-size: 15px; /* از 13px به 15px */
             letter-spacing: 0.08em;
             text-transform: uppercase;
             color: var(--text-primary);
         }
+
 
         .header-session-id {
             font-family: var(--font-mono);
@@ -1540,10 +1541,13 @@
     <main>
         <header>
             <div class="header-left">
-                <div class="header-logo">
-                    <i class="fas fa-crow"></i>
-                </div>
-                <span class="header-title">Intelligence Terminal</span>
+                <span class="header-title" style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 100 100" style="width:28px;height:28px" xmlns="http://www.w3.org/2000/svg">
+                    <text y=".9em" font-size="80" x="50%" text-anchor="middle">🦉</text>
+                </svg>
+                    Intelligence Terminal
+                </span>
+
                 {% if active_session_id %}
                 <span class="header-session-id">SID:{{ active_session_id }}</span>
                 {% endif %}
@@ -1701,6 +1705,20 @@
         let messageTimestamps = {};
         let autoScrollEnabled = true;
         let currentEditingInstructionId = null;
+        let MAX_CHARS = 150000;
+        let typingTimerInterval = null;
+        let typingSeconds = 0;
+
+        // ── Load Config ─────────────────────────────
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const data = await res.json();
+                MAX_CHARS = data.max_chars || 150000;
+            } catch (e) {
+                console.error('[LOAD-CONFIG]', e);
+            }
+        }
 
         // ── Theme Toggle ───────────────────────────────
         function toggleTheme() {
@@ -1804,7 +1822,6 @@
         }
 
         // ── Character Counter ──────────────────────────
-        const MAX_CHARS = 15000;
 
         function updateCharCounter() {
             const textarea = document.getElementById('prompt-input');
@@ -1860,6 +1877,9 @@
 
         // ── DOMContentLoaded ─────────────────────────────
         document.addEventListener("DOMContentLoaded", () => {
+            // Load config from server
+            loadConfig();
+            
             // Restore draft from localStorage
             const savedDraft = localStorage.getItem('draft_prompt');
             if (savedDraft) {
@@ -1978,6 +1998,34 @@
             `;
         }
 
+        // ── Typing Timer ────────────────────────────
+        function startTypingTimer() {
+            typingSeconds = 0;
+            const timerEl = document.getElementById('typing-timer');
+            if (timerEl) timerEl.textContent = '0s';
+            
+            typingTimerInterval = setInterval(() => {
+                typingSeconds++;
+                const timerEl = document.getElementById('typing-timer');
+                if (timerEl) {
+                    if (typingSeconds < 60) {
+                        timerEl.textContent = `${typingSeconds}s`;
+                    } else {
+                        const mins = Math.floor(typingSeconds / 60);
+                        const secs = typingSeconds % 60;
+                        timerEl.textContent = `${mins}m ${secs}s`;
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTypingTimer() {
+            if (typingTimerInterval) {
+                clearInterval(typingTimerInterval);
+                typingTimerInterval = null;
+            }
+        }
+
         // ── TYPING INDICATOR ─────────────────────────────
         function showTypingIndicator() {
             const container = document.getElementById('chat-messages');
@@ -2008,6 +2056,8 @@
                         <div class="typing-dot"></div>
                     </div>
                     <span class="typing-text">Generating response...</span>
+                    <span class="typing-timer" id="typing-timer" style="font-size:9px;color:var(--text-dim);margin-left:8px"></span>
+                    <span class="typing-timer" id="typing-timer" style="font-size:9px;color:var(--text-dim);margin-left:8px">0s</span>
                     <button id="stop-btn-${Date.now()}" class="stop-poll-btn" 
                         style="background:transparent;border:1px solid var(--red);color:var(--red);
                         font-family:var(--font-mono);font-size:10px;padding:2px 10px;border-radius:5px;
@@ -2019,6 +2069,10 @@
             `;
 
             container.appendChild(wrapper);
+            
+            // Start timer
+            startTypingTimer();
+            
             if (autoScrollEnabled) {
                 container.scrollTop = container.scrollHeight;
             }
@@ -2026,6 +2080,7 @@
         }
 
         function removeTypingIndicator(el) {
+            stopTypingTimer();
             if (el && el.parentNode) el.remove();
         }
 
@@ -2305,6 +2360,7 @@
                 const data = await response.json();
 
                 if (data.status === 'processing' && data.message_id) {
+                    // Poll until done — survives refresh because work is in background
                     pollMessageStatus(data.message_id, typingEl);
                 } else {
                     const reply = data.response || data.content || "No response received.";
@@ -2424,8 +2480,8 @@
         document.head.appendChild(styleEl);
 
         function pollMessageStatus(messageId, typingEl) {
-            const POLL_INTERVAL_MS = 2000;
-            const MAX_ATTEMPTS = 150;
+            const POLL_INTERVAL_MS = 3000;  // از 2 ثانیه به 3 ثانیه
+            const MAX_ATTEMPTS = 300;       // از 150 به 300 (15 دقیقه)
             let attempts = 0;
             let stopped = false;
 
@@ -2435,7 +2491,7 @@
                 if (attempts > MAX_ATTEMPTS) {
                     clearInterval(interval);
                     removeTypingIndicator(typingEl);
-                    appendMessageBubble('assistant', '⚠️ **Timeout.**');
+                    appendMessageBubble('assistant', '⚠️ **Timeout.** The response took too long. Please try again or check your connection.');
                     return;
                 }
                 try {
