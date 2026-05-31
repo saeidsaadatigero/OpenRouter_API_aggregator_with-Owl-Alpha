@@ -47,6 +47,7 @@ graph TD
 ```
 
 ---
+<img width="1401" height="902" alt="image" src="https://github.com/user-attachments/assets/0fec69e0-b62e-4cdd-bae4-1ab8b855b47a" />
 
 ## 🛠️ Technical Stack
 
