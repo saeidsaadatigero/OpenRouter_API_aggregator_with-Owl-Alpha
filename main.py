@@ -59,8 +59,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 coder_service = OpenRouterCodingService()
 
-MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
+MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=200000, cast=int)
 MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
+MAX_CHARS = config("MAX_CHARS", default=200000, cast=int)  # ✨ اضافه شد
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css', '.txt'}
 TARGET_BASE_DIR = Path("generated_components").resolve()
 
@@ -316,7 +317,7 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
             http_client = httpx.Client(
                 timeout=httpx.Timeout(
                     connect=30.0,
-                    read=180.0,  # ۳ دقیقه برای خوندن پاسخ
+                    read=600.0,  # ✨ ۱۰ دقیقه timeout برای پاسخ‌های طولانی
                     write=30.0,
                     pool=None
                 )
@@ -326,7 +327,7 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
                 base_url=base_url,
                 api_key=api_key,
                 http_client=http_client,
-                max_retries=0,
+                max_retries=2,  # ✨ تغییر: ۲ بار تلاش مجدد
                 default_headers={"HTTP-Referer": "https://localhost:8000"}
             )
             
@@ -337,7 +338,7 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
                 model=model_name,
                 messages=messages_payload,
                 temperature=0.3,
-                max_tokens=2000,
+                max_tokens=32000,  # ✨ حداکثر توکن خروجی (بسته به مدل)
                 stream=False
             )
             
@@ -351,10 +352,31 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
                 chat_svc.update_message_content(message_id, "⏹ Generation stopped by user.", status="cancelled")
                 return
             
-            if not response.choices or response.choices[0].message.content is None:
-                raise ValueError("Empty response from model")
+            # ✅ اضافه شد: بررسی کامل پاسخ
+            if not response:
+                raise ValueError("Empty response object from API")
+            
+            if not response.choices or len(response.choices) == 0:
+                raise ValueError("No choices in response from API")
+            
+            if response.choices[0].message is None:
+                raise ValueError("Message is None in response")
+            
+            if response.choices[0].message.content is None:
+                # ✨ بعضی مدل‌ها finish_reason دارن
+                finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else 'unknown'
+                logger.warning(f"[BG-TASK] Content is None, finish_reason={finish_reason}")
+                
+                if finish_reason == 'length':
+                    raise ValueError("Response truncated due to max_tokens limit. Increase max_tokens.")
+                else:
+                    raise ValueError(f"Content is None, finish_reason={finish_reason}")
             
             reply = response.choices[0].message.content.strip()
+            
+            if not reply:
+                raise ValueError("Response content is empty after strip")
+            
             tokens = response.usage.completion_tokens if response.usage else 0
             
             chat_svc = ChatService(db)
@@ -367,9 +389,22 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
             logger.error(f"[BG-TASK-ERROR] message_id={message_id} {error_type}: {error_msg}")
             try:
                 chat_svc = ChatService(db)
-                chat_svc.update_message_content(message_id, f"⚠️ Error: {error_msg}", status="error")
-            except:
-                pass
+                
+                # ✅ پیام خطای بهتر برای کاربر
+                if "JSONDecodeError" in error_type:
+                    user_msg = "⚠️ API response format error. The model may be temporarily unavailable. Please try again."
+                elif "timeout" in error_msg.lower():
+                    user_msg = "⚠️ Request timed out. The model is taking too long to respond. Try a shorter prompt."
+                elif "rate limit" in error_msg.lower():
+                    user_msg = "⚠️ Rate limit reached. Please wait a moment and try again."
+                elif "max_tokens" in error_msg.lower():
+                    user_msg = "⚠️ Response was too long and got truncated. Try asking for a shorter response."
+                else:
+                    user_msg = f"⚠️ Error: {error_msg[:200]}"  # محدود کردن طول خطا
+                
+                chat_svc.update_message_content(message_id, user_msg, status="error")
+            except Exception as db_err:
+                logger.error(f"[BG-TASK-DB-ERROR] Failed to update error message: {db_err}")
         finally:
             if http_client:
                 try:
@@ -384,6 +419,7 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
     # Start in a new thread
     t = th.Thread(target=_run, daemon=True)
     t.start()
+
         
 @app.post("/api/chat/{session_id}/send")
 async def handle_chat_send(

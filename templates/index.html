@@ -841,7 +841,7 @@
             color: var(--text-primary);
             resize: none;
             min-height: 20px;
-            max-height: 160px;
+            max-height: 400px;  /* ✨ از 160px به 400px */
             line-height: 1.5;
             padding: 4px 0;
         }
@@ -1963,7 +1963,7 @@ let currentEditingChatId = null;
 let originalChatTitle = "";
 let autoScrollEnabled = true;
 let currentEditingInstructionId = null;
-let MAX_CHARS = 150000;
+let MAX_CHARS = 200000;  // ✨ پیش‌فرض جدید
 let typingTimerInterval = null;
 let typingSeconds = 0;
 
@@ -1972,9 +1972,11 @@ async function loadConfig() {
     try {
         const res = await fetch('/api/config');
         const data = await res.json();
-        MAX_CHARS = data.max_chars || 150000;
+        MAX_CHARS = data.max_chars || 200000;  // ✨ آپدیت
+        console.log('[CONFIG] MAX_CHARS loaded:', MAX_CHARS);
     } catch (e) {
         console.error('[LOAD-CONFIG]', e);
+        MAX_CHARS = 200000;  // ✨ fallback
     }
 }
 
@@ -2065,10 +2067,18 @@ function updateCharCounter() {
     const textarea = document.getElementById('prompt-input');
     const counter = document.getElementById('char-counter');
     const length = textarea.value.length;
-    counter.textContent = `${length} / ${MAX_CHARS}`;
+    
+    // ✨ فرمت بهتر برای اعداد بزرگ
+    const formatNumber = (num) => {
+        if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+        return num.toString();
+    };
+    
+    counter.textContent = `${formatNumber(length)} / ${formatNumber(MAX_CHARS)}`;
     counter.classList.remove('warning', 'danger');
-    if (length > MAX_CHARS * 0.9) counter.classList.add('danger');
-    else if (length > MAX_CHARS * 0.7) counter.classList.add('warning');
+    
+    if (length > MAX_CHARS * 0.95) counter.classList.add('danger');
+    else if (length > MAX_CHARS * 0.8) counter.classList.add('warning');
 }
 
 // ── Auto-scroll Toggle ─────────────────────────
