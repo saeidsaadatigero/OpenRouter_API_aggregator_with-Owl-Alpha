@@ -1,4 +1,5 @@
 # services/file_service.py
+
 import os
 import re
 import logging
@@ -46,22 +47,88 @@ class FileService:
     ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.txt', '.pptx', '.xlsx', '.py', '.js', '.html', '.css', '.json', '.md'}
     MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
     
+    # کلمات فارسی رایبر برای تشخیص جهت صحیح
+    COMMON_PERSIAN_WORDS = {
+        'است', 'هست', 'می', 'شود', 'کرد', 'بود', 'این', 'آن', 'با', 'از', 'به', 'در',
+        'که', 'را', 'و', 'یا', 'برای', 'تا', 'نیز', 'هم', 'ما', 'شما', 'او', 'آنها',
+        'توسعه', 'برنامه', 'سیستم', 'داده', 'کار', 'زمان', 'سال', 'ماه', 'روز',
+        'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم',
+        'فصل', 'بخش', 'مثال', 'تمرین', 'سوال', 'جواب', 'کتاب', 'درس', 'دانشگاه',
+        'شرکت', 'مدیریت', 'پروژه', 'تیم', 'گروه', 'کاربر', 'سرور', 'شبکه',
+    }
+    
+    @staticmethod
+    def is_persian_char(char: str) -> bool:
+        """Check if a character is Persian/Arabic."""
+        if not char:
+            return False
+        code = ord(char)
+        return (0x0600 <= code <= 0x06FF) or \
+               (0x0750 <= code <= 0x077F) or \
+               (0x08A0 <= code <= 0x08FF) or \
+               (0xFB50 <= code <= 0xFDFF) or \
+               (0xFE70 <= code <= 0xFEFF)
+    
+    @staticmethod
+    def count_persian_words(text: str) -> int:
+        """Count how many common Persian words are in text."""
+        if not text:
+            return 0
+        words = set(text.split())
+        return len(words & FileService.COMMON_PERSIAN_WORDS)
+    
+    @staticmethod
+    def is_pdf_reversed(text: str) -> bool:
+        """
+        Detect if PDF text is reversed by comparing Persian word count
+        in original vs reversed text.
+        """
+        if not text:
+            return False
+        
+        # Count Persian words in original text
+        original_count = FileService.count_persian_words(text)
+        
+        # Count Persian words in fully reversed text
+        reversed_text = text[::-1]
+        reversed_count = FileService.count_persian_words(reversed_text)
+        
+        logger.info(f"[PDF-DIRECTION] Original Persian words: {original_count}, Reversed: {reversed_count}")
+        
+        # If reversed version has more Persian words, PDF is reversed
+        return reversed_count > original_count
+    
+    @staticmethod
+    def fix_persian_pdf_text(text: str) -> str:
+        """
+        Fix Persian text extracted from PDF.
+        Only reverse if text appears to be reversed.
+        """
+        if not text:
+            return text
+        
+        # Check if text needs reversal
+        if FileService.is_pdf_reversed(text):
+            logger.info(f"[PDF-DIRECTION] Text appears REVERSED, fixing...")
+            return text[::-1]
+        else:
+            logger.info(f"[PDF-DIRECTION] Text appears CORRECT, no fix needed")
+            return text
+    
     @staticmethod
     def clean_text(text: str) -> str:
         """Clean and normalize extracted text."""
         if not text:
             return ""
         
-        # Remove null bytes and control characters (keep newlines and tabs)
+        # Remove null bytes and control characters
         text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
         
-        # Fix Arabic/Persian character spacing
-        text = re.sub(r'([ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی])\s+', r'\1 ', text)
+        # Fix Persian text direction if needed
+        text = FileService.fix_persian_pdf_text(text)
         
-        # Remove excessive whitespace (more than 2 newlines)
+        # Remove excessive whitespace
         text = re.sub(r'\n{3,}', '\n\n', text)
-        
-        # Remove excessive spaces (more than 2)
         text = re.sub(r' {2,}', ' ', text)
         
         # Strip each line
@@ -100,7 +167,7 @@ class FileService:
         if HAS_OCR:
             try:
                 logger.info("[PDF] Trying OCR...")
-                images = pdf2image.convert_from_path(file_path, dpi=200)
+                images = pdf2image.convert_from_path(file_path, dpi=300)
                 
                 for i, image in enumerate(images):
                     page_text = pytesseract.image_to_string(image, lang='eng+fas')
@@ -130,7 +197,6 @@ class FileService:
                 if paragraph.text.strip():
                     text += paragraph.text + "\n"
             
-            # Also extract text from tables
             for table in doc.tables:
                 for row in table.rows:
                     row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
@@ -158,7 +224,6 @@ class FileService:
             except (UnicodeDecodeError, UnicodeError):
                 continue
         
-        # Last resort
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read()
     
