@@ -1087,7 +1087,7 @@
         /* ── EDIT MESSAGE TEXTAREA ───────────────── */
         .edit-textarea {
             width: 100%;
-            min-width: 200px;
+            min-width: 580px;
             max-width: 580px;
             background: var(--bg-surface);
             border: 1.5px solid var(--accent);
@@ -1098,8 +1098,8 @@
             color: var(--text-primary);
             outline: none;
             resize: vertical;
-            min-height: 20px;
-            max-height: 300px;
+            min-height: 150px;
+            max-height: 350px;
             line-height: 1.6;
             margin-top: 8px;
             overflow-y: auto;
@@ -1518,14 +1518,16 @@
             color: var(--accent-soft);
             font-family: var(--font-mono);
             font-size: 10px;
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 5px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            margin-top: 6px;
+            gap: 5px;
+            margin-top: 8px;
             transition: all 0.15s;
+            position: relative;
+            z-index: 10;
         }
 
         .show-more-btn:hover {
@@ -1534,8 +1536,8 @@
         }
 
         .msg-bubble-user.collapsed {
-            max-height: 120px;
-            overflow: hidden;
+            max-height: 100px !important;
+            overflow: hidden !important;
             position: relative;
         }
 
@@ -1545,10 +1547,12 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 40px;
-            background: linear-gradient(transparent, rgba(124,106,247,0.8));
-            border-radius: 0 0 4px 16px;
+            height: 30px;
+            background: linear-gradient(transparent, rgba(91, 79, 207, 0.95));
+            pointer-events: none;
+            z-index: 5;
         }
+
 
         /* ── RESPONSIVE ───────────────────────────── */
         @media (max-width: 1024px) {
@@ -1566,103 +1570,165 @@
             }
         }
 
-        @media (max-width: 768px) {
-            .hamburger-btn {
-                display: flex;
-            }
-            
-            aside {
-                position: fixed;
-                top: 0;
-                left: 0;
-                bottom: 0;
-                width: 280px;
-                z-index: 200;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-            
-            aside.open {
-                transform: translateX(0);
-            }
-            
-            main {
-                width: 100%;
-            }
-            
-            header {
-                padding: 0 16px;
-                height: 52px;
-            }
-            
-            .header-title {
-                font-size: 12px;
-            }
-            
-            .header-session-id {
-                display: none;
-            }
-            
-            #chat-messages {
-                padding: 16px;
-                gap: 12px;
-            }
-            
-            .msg-bubble-user,
-            .msg-bubble-assistant {
-                font-size: 13px;
-                padding: 10px 14px;
-            }
-            
-            .code-block-wrapper {
-                margin: 8px 0;
-            }
-            
-            .code-block-pre {
-                padding: 12px !important;
-                font-size: 11px !important;
-                overflow-x: auto;
-            }
-            
-            footer {
-                padding: 12px 16px 16px;
-            }
-            
-            #prompt-input {
-                font-size: 14px;
-                min-height: 44px;
-            }
-            
-            #submit-btn {
-                width: 44px;
-                height: 44px;
-            }
-            
-            .input-hint {
-                font-size: 9px;
-            }
-            
-            .modal-surface {
-                margin: 16px;
-                max-width: calc(100% - 32px);
-            }
-            
-            .settings-modal-surface {
-                margin: 0;
-                max-width: 100%;
-                height: 100%;
-                border-radius: 0;
-            }
-            
-            .sidebar-header {
-                padding: 16px;
-            }
-            
-            .new-chat-btn {
-                padding: 10px 14px;
-                font-size: 12px;
-            }
-        }
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+    }
+    
+    aside {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 200;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    aside.open {
+        transform: translateX(0);
+    }
+    
+    main {
+        width: 100%;
+    }
+    
+    header {
+        padding: 0 16px;
+        height: 52px;
+    }
+    
+    .header-title {
+        font-size: 12px;
+    }
+    
+    .header-session-id {
+        display: none;
+    }
+    
+    #chat-messages {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .msg-wrapper {
+        max-width: 100%;
+    }
+    
+    .msg-bubble-user,
+    .msg-bubble-assistant {
+        font-size: 13px;
+        padding: 10px 12px;
+        max-width: 100%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    /* ✅ اصلاح بلاک‌های کد برای موبایل */
+    .code-block-wrapper {
+        margin: 8px 0;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .code-block-header {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+    
+    .code-block-pre {
+        padding: 10px !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: pre;
+        word-wrap: normal;
+    }
+    
+    /* ✅ اصلاح دکمه‌های عملیات */
+    .msg-actions {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .msg-action-btn {
+        font-size: 9px;
+        padding: 4px 8px;
+    }
+    
+    /* ✅ اصلاح show more button */
+    .show-more-btn {
+        font-size: 9px;
+        padding: 4px 10px;
+        margin-top: 6px;
+    }
+    
+    footer {
+        padding: 10px 12px 12px;
+    }
+    
+    .input-container {
+        padding: 8px 8px 8px 12px;
+        gap: 8px;
+    }
+    
+    #prompt-input {
+        font-size: 14px;
+        min-height: 44px;
+    }
+    
+    #submit-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .input-hint {
+        font-size: 8px;
+        gap: 6px;
+    }
+    
+    .char-counter {
+        font-size: 8px;
+    }
+    
+    .modal-surface {
+        margin: 16px;
+        max-width: calc(100% - 32px);
+        padding: 20px;
+    }
+    
+    .settings-modal-surface {
+        margin: 0;
+        max-width: 100%;
+        height: 100%;
+        border-radius: 0;
+        padding: 16px;
+    }
+    
+    .sidebar-header {
+        padding: 16px;
+    }
+    
+    .new-chat-btn {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+    
+    /* ✅ اصلاح تایپینگ ایندیکیتور */
+    .typing-bubble {
+        padding: 10px 14px;
+    }
+    
+    .typing-text {
+        font-size: 10px;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -2296,22 +2362,12 @@
                     <div class="${bubbleClass}" style="position:relative">
                         ${escapeHtml(content)}
                     </div>
-                    ${isLong ? `
-                        <button class="show-more-btn" onclick="toggleShowMore(this)">
-                            <i class="fas fa-chevron-down" style="font-size:8px"></i> Show More
-                        </button>
-                    ` : ''}
+                    ${isLong ? `<button type="button" class="show-more-btn" onclick="toggleShowMore(this)"><i class="fas fa-chevron-down" style="font-size:8px"></i> Show More</button>` : ''}
                     <div class="msg-timestamp" data-time="${fullTimestamp}">${timestamp}</div>
                     <div class="msg-actions">
-                        <button class="msg-action-btn" onclick="editMessage(this)" title="Edit">
-                            <i class="fas fa-edit" style="font-size:9px"></i> Edit
-                        </button>
-                        <button class="msg-action-btn" onclick="copyUserMessage(this)" title="Copy">
-                            <i class="far fa-copy" style="font-size:9px"></i> Copy
-                        </button>
-                        <button class="msg-action-btn" onclick="retryMessage(this)" title="Retry">
-                            <i class="fas fa-redo" style="font-size:9px"></i> Retry
-                        </button>
+                        <button class="msg-action-btn" onclick="editMessage(this)" title="Edit"><i class="fas fa-edit" style="font-size:9px"></i> Edit</button>
+                        <button class="msg-action-btn" onclick="copyUserMessage(this)" title="Copy"><i class="far fa-copy" style="font-size:9px"></i> Copy</button>
+                        <button class="msg-action-btn" onclick="retryMessage(this)" title="Retry"><i class="fas fa-redo" style="font-size:9px"></i> Retry</button>
                     </div>
                 `;
             } else {
@@ -2906,19 +2962,31 @@
             overlay.classList.toggle('open');
         }
 
-        // ── Show More for Long Prompts ──────────────
-        function toggleShowMore(btn) {
-            const bubble = btn.closest('.msg-bubble-user');
-            const isCollapsed = bubble.classList.contains('collapsed');
-            
-            if (isCollapsed) {
-                bubble.classList.remove('collapsed');
-                btn.innerHTML = '<i class="fas fa-chevron-up" style="font-size:8px"></i> Show Less';
-            } else {
-                bubble.classList.add('collapsed');
-                btn.innerHTML = '<i class="fas fa-chevron-down" style="font-size:8px"></i> Show More';
-            }
-        }
+// ── Show More for Long Prompts ──────────────
+function toggleShowMore(btn) {
+    console.log('[SHOW MORE] Button clicked');
+    
+    const bubble = btn.closest('.msg-bubble-user');
+    
+    if (!bubble) {
+        console.error('[SHOW MORE] Bubble not found!');
+        return;
+    }
+    
+    const isCollapsed = bubble.classList.contains('collapsed');
+    console.log('[SHOW MORE] isCollapsed:', isCollapsed);
+    
+    if (isCollapsed) {
+        bubble.classList.remove('collapsed');
+        btn.innerHTML = '<i class="fas fa-chevron-up" style="font-size:8px"></i> Show Less';
+        console.log('[SHOW MORE] Expanded!');
+    } else {
+        bubble.classList.add('collapsed');
+        btn.innerHTML = '<i class="fas fa-chevron-down" style="font-size:8px"></i> Show More';
+        console.log('[SHOW MORE] Collapsed!');
+    }
+}
+
     </script>
 </body>
 </html>
