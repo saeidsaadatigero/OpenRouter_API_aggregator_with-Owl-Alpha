@@ -1087,8 +1087,8 @@
         /* ── EDIT MESSAGE TEXTAREA ───────────────── */
         .edit-textarea {
             width: 100%;
-            min-width: 580px;
-            max-width: 580px;
+            min-width: 450px;
+            max-width: 500px;
             background: var(--bg-surface);
             border: 1.5px solid var(--accent);
             border-radius: 16px 16px 4px 16px;
@@ -2966,8 +2966,14 @@
 function toggleShowMore(btn) {
     console.log('[SHOW MORE] Button clicked');
     
-    const bubble = btn.closest('.msg-bubble-user');
+    // پیدا کردن msg-wrapper و سپس msg-bubble-user داخل آن
+    const wrapper = btn.closest('.msg-wrapper');
+    if (!wrapper) {
+        console.error('[SHOW MORE] Wrapper not found!');
+        return;
+    }
     
+    const bubble = wrapper.querySelector('.msg-bubble-user');
     if (!bubble) {
         console.error('[SHOW MORE] Bubble not found!');
         return;
@@ -2986,6 +2992,7 @@ function toggleShowMore(btn) {
         console.log('[SHOW MORE] Collapsed!');
     }
 }
+
 
     </script>
 </body>
