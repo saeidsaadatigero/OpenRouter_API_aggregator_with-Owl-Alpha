@@ -1482,11 +1482,192 @@
         .settings-list-item-btn.delete:hover {
             background: rgba(240, 86, 122, 0.1);
         }
+
+        /* ── MOBILE SIDEBAR ──────────────────────── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 199;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        /* Hamburger Button */
+        .hamburger-btn {
+            display: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* ── SHOW MORE BUTTON ────────────────────── */
+        .show-more-btn {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--accent-soft);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 6px;
+            transition: all 0.15s;
+        }
+
+        .show-more-btn:hover {
+            background: var(--accent-glow2);
+            border-color: var(--accent);
+        }
+
+        .msg-bubble-user.collapsed {
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .msg-bubble-user.collapsed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(transparent, rgba(124,106,247,0.8));
+            border-radius: 0 0 4px 16px;
+        }
+
+        /* ── RESPONSIVE ───────────────────────────── */
+        @media (max-width: 1024px) {
+            aside {
+                width: 200px;
+            }
+            
+            .header-title {
+                font-size: 13px;
+            }
+            
+            .model-badge {
+                font-size: 9px;
+                padding: 2px 8px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger-btn {
+                display: flex;
+            }
+            
+            aside {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 280px;
+                z-index: 200;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            aside.open {
+                transform: translateX(0);
+            }
+            
+            main {
+                width: 100%;
+            }
+            
+            header {
+                padding: 0 16px;
+                height: 52px;
+            }
+            
+            .header-title {
+                font-size: 12px;
+            }
+            
+            .header-session-id {
+                display: none;
+            }
+            
+            #chat-messages {
+                padding: 16px;
+                gap: 12px;
+            }
+            
+            .msg-bubble-user,
+            .msg-bubble-assistant {
+                font-size: 13px;
+                padding: 10px 14px;
+            }
+            
+            .code-block-wrapper {
+                margin: 8px 0;
+            }
+            
+            .code-block-pre {
+                padding: 12px !important;
+                font-size: 11px !important;
+                overflow-x: auto;
+            }
+            
+            footer {
+                padding: 12px 16px 16px;
+            }
+            
+            #prompt-input {
+                font-size: 14px;
+                min-height: 44px;
+            }
+            
+            #submit-btn {
+                width: 44px;
+                height: 44px;
+            }
+            
+            .input-hint {
+                font-size: 9px;
+            }
+            
+            .modal-surface {
+                margin: 16px;
+                max-width: calc(100% - 32px);
+            }
+            
+            .settings-modal-surface {
+                margin: 0;
+                max-width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+            
+            .sidebar-header {
+                padding: 16px;
+            }
+            
+            .new-chat-btn {
+                padding: 10px 14px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
-
     <!-- ── SIDEBAR ─────────────────────────────── -->
+     <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
     <aside>
         <div class="sidebar-header">
             <button onclick="createNewSession()" class="new-chat-btn">
@@ -1540,6 +1721,9 @@
     <!-- ── MAIN ───────────────────────────────── -->
     <main>
         <header>
+            <button class="hamburger-btn" onclick="toggleMobileSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="header-left">
                 <span class="header-title" style="display:flex;align-items:center;gap:8px">
                 <svg viewBox="0 0 100 100" style="width:28px;height:28px" xmlns="http://www.w3.org/2000/svg">
@@ -2102,13 +2286,21 @@
             const fullTimestamp = now.toISOString();
 
             if (role === 'user') {
+                const isLong = content.length > 300;
+                const bubbleClass = isLong ? 'msg-bubble-user collapsed' : 'msg-bubble-user';
+                
                 wrapper.innerHTML = `
                     <div class="msg-label you">
                         <i class="fas fa-user" style="font-size:8px"></i> You
                     </div>
-                    <div class="msg-bubble-user" style="position:relative">
+                    <div class="${bubbleClass}" style="position:relative">
                         ${escapeHtml(content)}
                     </div>
+                    ${isLong ? `
+                        <button class="show-more-btn" onclick="toggleShowMore(this)">
+                            <i class="fas fa-chevron-down" style="font-size:8px"></i> Show More
+                        </button>
+                    ` : ''}
                     <div class="msg-timestamp" data-time="${fullTimestamp}">${timestamp}</div>
                     <div class="msg-actions">
                         <button class="msg-action-btn" onclick="editMessage(this)" title="Edit">
@@ -2706,6 +2898,27 @@
                 closeSettingsModal();
             }
         });
+        // ── Mobile Sidebar ─────────────────────────
+        function toggleMobileSidebar() {
+            const aside = document.querySelector('aside');
+            const overlay = document.getElementById('sidebar-overlay');
+            aside.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // ── Show More for Long Prompts ──────────────
+        function toggleShowMore(btn) {
+            const bubble = btn.closest('.msg-bubble-user');
+            const isCollapsed = bubble.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                bubble.classList.remove('collapsed');
+                btn.innerHTML = '<i class="fas fa-chevron-up" style="font-size:8px"></i> Show Less';
+            } else {
+                bubble.classList.add('collapsed');
+                btn.innerHTML = '<i class="fas fa-chevron-down" style="font-size:8px"></i> Show More';
+            }
+        }
     </script>
 </body>
 </html>
