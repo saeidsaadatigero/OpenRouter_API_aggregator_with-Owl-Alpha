@@ -1,3 +1,4 @@
+# services/openrouter_service.py
 import os
 import logging
 from typing import AsyncGenerator
