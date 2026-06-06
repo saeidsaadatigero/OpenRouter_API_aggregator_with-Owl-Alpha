@@ -1851,14 +1851,23 @@
 
         <footer>
             <form id="generation-form" class="input-form">
-                <div class="input-container">
-                    <textarea id="prompt-input" rows="1"
-                        placeholder="Ask anything or request code generation..."
-                        required></textarea>
-                    <button type="submit" id="submit-btn">
-                        <i class="fas fa-paper-plane" style="font-size:12px"></i>
-                    </button>
-                </div>
+            <div class="input-container">
+                <!-- دکمه آپلود فایل -->
+                <button type="button" class="theme-toggle" onclick="document.getElementById('file-input').click()" title="Upload File" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
+                    <i class="fas fa-paperclip" style="font-size:12px"></i>
+                </button>
+                <input type="file" id="file-input" style="display:none" 
+                    accept=".pdf,.docx,.txt,.pptx,.xlsx,.py,.js,.html,.css,.json,.md"
+                    onchange="uploadFile(this)">
+                
+                <textarea id="prompt-input" rows="1"
+                    placeholder="Ask anything or request code generation..."
+                    required></textarea>
+                <button type="submit" id="submit-btn">
+                    <i class="fas fa-paper-plane" style="font-size:12px"></i>
+                </button>
+            </div>
+
                 <p class="input-hint">
                     <span>Enter ↵ to send · Shift+Enter for new line</span>
                     <span class="char-counter" id="char-counter">0 / 150000</span>
@@ -2992,6 +3001,113 @@ function toggleShowMore(btn) {
         console.log('[SHOW MORE] Collapsed!');
     }
 }
+// ── File Upload ─────────────────────────────
+async function uploadFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    console.log('[UPLOAD] Starting upload:', file.name, 'Size:', file.size, 'Type:', file.type);
+    
+    // Show loading
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
+    
+    // Show loading in textarea
+    const promptInput = document.getElementById('prompt-input');
+    const originalPlaceholder = promptInput.placeholder;
+    promptInput.placeholder = '📄 Extracting text from file...';
+    promptInput.disabled = true;
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        console.log('[UPLOAD] Sending request to /api/upload');
+        
+        const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('[UPLOAD] Response status:', res.status);
+        
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error('[UPLOAD] Server error:', errorData);
+            alert('Failed to upload file: ' + (errorData.detail || 'Unknown error'));
+            return;
+        }
+        
+        const data = await res.json();
+        console.log('[UPLOAD] Success:', data.filename, 'Chars:', data.chars);
+        
+        // Add file content to prompt
+        const fileInfo = `\n\n--- 📄 File: ${data.filename} (${data.chars} chars) ---\n${data.text}\n--- End of file ---\n`;
+        promptInput.value = (promptInput.value + fileInfo).trim();
+        promptInput.style.height = 'auto';
+        promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
+        updateCharCounter();
+        
+        // Show success message
+        showUploadSuccess(data.filename, data.chars);
+        
+    } catch (err) {
+        console.error('[UPLOAD] Error:', err);
+        alert('Failed to upload file: ' + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
+        promptInput.placeholder = originalPlaceholder;
+        promptInput.disabled = false;
+        input.value = ''; // Reset input
+    }
+}
+
+function showUploadSuccess(filename, chars) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: var(--green);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        font-weight: 600;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: slideIn 0.3s ease;
+    `;
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ✅ ${filename} uploaded (${chars} chars)`;
+    document.body.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add animation keyframes
+const uploadStyle = document.createElement('style');
+uploadStyle.textContent = `
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(100px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100px); }
+    }
+`;
+document.head.appendChild(uploadStyle);
 
 
     </script>

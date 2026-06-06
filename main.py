@@ -472,3 +472,69 @@ async def get_message_status(message_id: int, db: Session = Depends(get_db)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# ── File Upload ─────────────────────────────
+from fastapi import UploadFile, File
+from services.file_service import FileService
+import tempfile
+
+UPLOAD_ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.txt', '.pptx', '.xlsx', '.py', '.js', '.html', '.css', '.json', '.md'}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload and extract text from file."""
+    logger.info(f"[UPLOAD] Starting upload for file: {file.filename}")
+    
+    try:
+        # Check file extension
+        ext = os.path.splitext(file.filename)[1].lower()
+        logger.info(f"[UPLOAD] File extension: {ext}")
+        
+        if ext not in UPLOAD_ALLOWED_EXTENSIONS:
+            logger.warning(f"[UPLOAD] Unsupported format: {ext}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unsupported file format. Allowed: {', '.join(UPLOAD_ALLOWED_EXTENSIONS)}"
+            )
+        
+        # Read content
+        content = await file.read()
+        logger.info(f"[UPLOAD] File size: {len(content)} bytes")
+        
+        # Check file size
+        if len(content) > MAX_FILE_SIZE:
+            logger.warning(f"[UPLOAD] File too large: {len(content)} bytes")
+            raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+        
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        logger.info(f"[UPLOAD] Temp file saved: {tmp_path}")
+        
+        # Extract text
+        logger.info(f"[UPLOAD] Extracting text...")
+        text = FileService.extract_text(tmp_path)
+        logger.info(f"[UPLOAD] Text extracted: {len(text)} chars")
+        
+        # Clean up temp file
+        os.unlink(tmp_path)
+        logger.info(f"[UPLOAD] Temp file cleaned up")
+        
+        logger.info(f"[UPLOAD] ✅ SUCCESS! Returning response")
+        
+        return {
+            "filename": file.filename,
+            "text": text,
+            "chars": len(text),
+            "format": ext
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[UPLOAD] ❌ ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
