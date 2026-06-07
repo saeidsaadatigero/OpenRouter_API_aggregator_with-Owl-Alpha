@@ -18,4 +18,4 @@ ENV/
 .vscode/
 .idea/
 *.db
-openrouter_studio.db
+openrouter_studio.dbtest_full_flow.py

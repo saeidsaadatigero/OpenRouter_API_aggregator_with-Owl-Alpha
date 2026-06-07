@@ -22,6 +22,12 @@ from services.openrouter_service import OpenRouterCodingService
 from services.chat_service import ChatService
 from services.instruction_service import InstructionService
 
+import threading
+
+# Global cancellation events for background tasks
+_cancel_events: dict[int, threading.Event] = {}
+_cancel_lock = threading.Lock()
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -53,8 +59,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 coder_service = OpenRouterCodingService()
 
-MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=10000, cast=int)
+MAX_PROMPT_LENGTH = config("MAX_PROMPT_LENGTH", default=200000, cast=int)
 MAX_FILENAME_LENGTH = config("MAX_FILENAME_LENGTH", default=255, cast=int)
+MAX_CHARS = config("MAX_CHARS", default=200000, cast=int)  # ✨ اضافه شد
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rs', '.html', '.css', '.txt'}
 TARGET_BASE_DIR = Path("generated_components").resolve()
 
@@ -277,66 +284,163 @@ async def initialize_default_instruction(db: Session = Depends(get_db)):
         "id": instruction.id
     }
 
+import time
 
 def run_llm_in_background(message_id: int, messages_payload: list, model_name: str, api_key: str, base_url: str) -> None:
-    """Runs synchronously in a thread — completely decoupled from the HTTP request lifecycle."""
-    import asyncio
-    from openai import AsyncOpenAI
-
-    async def _call():
-        db: DBSession = SessionLocal()
-        client = None
+    """Run LLM call in a separate thread to not block the server."""
+    import threading as th
+    
+    def _run():
+        from openai import OpenAI
+        import httpx
+        
+        logger.info(f"[BG-TASK-START] message_id={message_id} model={model_name}")
+        
+        # Create cancellation event
+        cancel_event = threading.Event()
+        with _cancel_lock:
+            _cancel_events[message_id] = cancel_event
+        
+        db = SessionLocal()
+        http_client = None
+        
         try:
-            client = AsyncOpenAI(
+            logger.info(f"[BG-TASK-DB] message_id={message_id} DB session acquired")
+            
+            # Check cancellation
+            if cancel_event.is_set():
+                logger.info(f"[BG-TASK-CANCELLED] message_id={message_id}")
+                chat_svc = ChatService(db)
+                chat_svc.update_message_content(message_id, "⏹ Generation stopped by user.", status="cancelled")
+                return
+            
+            http_client = httpx.Client(
+                timeout=httpx.Timeout(
+                    connect=30.0,
+                    read=600.0,  # ✨ ۱۰ دقیقه timeout برای پاسخ‌های طولانی
+                    write=30.0,
+                    pool=None
+                )
+            )
+            
+            client = OpenAI(
                 base_url=base_url,
                 api_key=api_key,
+                http_client=http_client,
+                max_retries=2,  # ✨ تغییر: ۲ بار تلاش مجدد
                 default_headers={"HTTP-Referer": "https://localhost:8000"}
             )
-            response = await client.chat.completions.create(
+            
+            logger.info(f"[BG-TASK-CALLING] message_id={message_id} calling API...")
+            t0 = time.time()
+            
+            response = client.chat.completions.create(
                 model=model_name,
                 messages=messages_payload,
                 temperature=0.3,
-                max_tokens=16000,  # برای پاسخ‌های طولانی
+                max_tokens=32000,  # ✨ حداکثر توکن خروجی (بسته به مدل)
                 stream=False
             )
+            
+            elapsed = time.time() - t0
+            logger.info(f"[BG-TASK-RESPONSE] message_id={message_id} elapsed={elapsed:.1f}s")
+            
+            # Check cancellation again after getting response
+            if cancel_event.is_set():
+                logger.info(f"[BG-TASK-CANCELLED] message_id={message_id} cancelled after API call")
+                chat_svc = ChatService(db)
+                chat_svc.update_message_content(message_id, "⏹ Generation stopped by user.", status="cancelled")
+                return
+            
+            # ✅ اضافه شد: بررسی کامل پاسخ
+            if not response:
+                raise ValueError("Empty response object from API")
+            
+            if not response.choices or len(response.choices) == 0:
+                raise ValueError("No choices in response from API")
+            
+            if response.choices[0].message is None:
+                raise ValueError("Message is None in response")
+            
+            if response.choices[0].message.content is None:
+                # ✨ بعضی مدل‌ها finish_reason دارن
+                finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else 'unknown'
+                logger.warning(f"[BG-TASK] Content is None, finish_reason={finish_reason}")
+                
+                if finish_reason == 'length':
+                    raise ValueError("Response truncated due to max_tokens limit. Increase max_tokens.")
+                else:
+                    raise ValueError(f"Content is None, finish_reason={finish_reason}")
+            
             reply = response.choices[0].message.content.strip()
+            
+            if not reply:
+                raise ValueError("Response content is empty after strip")
+            
+            tokens = response.usage.completion_tokens if response.usage else 0
+            
             chat_svc = ChatService(db)
             chat_svc.update_message_content(message_id, reply, status="done")
-            logger.info(f"[BG-TASK] Message {message_id} completed successfully.")
+            logger.info(f"[BG-TASK-DONE] message_id={message_id} tokens={tokens} chars={len(reply)}")
+            
         except Exception as e:
-            logger.error(f"[BG-TASK-ERROR] Message {message_id} failed: {str(e)}")
-            chat_svc = ChatService(db)
-            chat_svc.update_message_content(message_id, f"⚠️ Error: {str(e)}", status="error")
+            error_type = type(e).__name__
+            error_msg = str(e)
+            logger.error(f"[BG-TASK-ERROR] message_id={message_id} {error_type}: {error_msg}")
+            try:
+                chat_svc = ChatService(db)
+                
+                # ✅ پیام خطای بهتر برای کاربر
+                if "JSONDecodeError" in error_type:
+                    user_msg = "⚠️ API response format error. The model may be temporarily unavailable. Please try again."
+                elif "timeout" in error_msg.lower():
+                    user_msg = "⚠️ Request timed out. The model is taking too long to respond. Try a shorter prompt."
+                elif "rate limit" in error_msg.lower():
+                    user_msg = "⚠️ Rate limit reached. Please wait a moment and try again."
+                elif "max_tokens" in error_msg.lower():
+                    user_msg = "⚠️ Response was too long and got truncated. Try asking for a shorter response."
+                else:
+                    user_msg = f"⚠️ Error: {error_msg[:200]}"  # محدود کردن طول خطا
+                
+                chat_svc.update_message_content(message_id, user_msg, status="error")
+            except Exception as db_err:
+                logger.error(f"[BG-TASK-DB-ERROR] Failed to update error message: {db_err}")
         finally:
-            if client:
+            if http_client:
                 try:
-                    await client.close()
+                    http_client.close()
                 except:
                     pass
             db.close()
+            with _cancel_lock:
+                _cancel_events.pop(message_id, None)
+            logger.info(f"[BG-TASK-CLEANUP] message_id={message_id} completed")
+    
+    # Start in a new thread
+    t = th.Thread(target=_run, daemon=True)
+    t.start()
 
-    try:
-        asyncio.run(_call())
-    except RuntimeError:
-        # Event loop is closed, create a new one
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(_call())
-        finally:
-            loop.close()
-
-
+        
 @app.post("/api/chat/{session_id}/send")
 async def handle_chat_send(
     session_id: int,
     payload: ChatSendPayload,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     logger.info(f"[SEND] session_id={session_id}")
 
     chat_manager = ChatService(db)
+    
+    # Cancel all pending messages in this session
+    from models import ChatMessage
+    pending_msgs = db.query(ChatMessage).filter(
+        ChatMessage.session_id == session_id,
+        ChatMessage.status == "pending"
+    ).all()
+    for pm in pending_msgs:
+        chat_manager.update_message_content(pm.id, "⏹ Cancelled (new request)", status="cancelled")
+        logger.info(f"[SEND-CLEANUP] Cancelled pending message {pm.id}")
+    
     chat_manager.update_session_title_fallback(session_id, payload.prompt)
     chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt, status="done")
 
@@ -354,8 +458,8 @@ async def handle_chat_send(
     # Create placeholder
     pending_msg = chat_manager.add_pending_message(session_id=session_id, role="assistant")
 
-    background_tasks.add_task(
-        run_llm_in_background,
+    # ✨ NEW: Use threading instead of BackgroundTasks
+    run_llm_in_background(
         message_id=pending_msg.id,
         messages_payload=messages_payload,
         model_name=coder_service.model_name,
@@ -472,6 +576,25 @@ async def get_message_status(message_id: int, db: Session = Depends(get_db)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+@app.post("/api/message/{message_id}/stop")
+async def stop_message_generation(message_id: int, db: Session = Depends(get_db)):
+    """Cancel a running background generation."""
+    logger.info(f"[STOP-REQUEST] message_id={message_id}")
+    
+    with _cancel_lock:
+        cancel_event = _cancel_events.get(message_id)
+        logger.info(f"[STOP-CHECK] message_id={message_id} found={cancel_event is not None} events_count={len(_cancel_events)}")
+    
+    if cancel_event:
+        cancel_event.set()
+        logger.info(f"[STOP-SET] message_id={message_id} cancel event set")
+        chat_svc = ChatService(db)
+        chat_svc.update_message_content(message_id, "⏹ Stopping...", status="cancelled")
+        return {"status": "cancelled"}
+    else:
+        logger.warning(f"[STOP-NOT-FOUND] message_id={message_id} no cancel event")
+        return {"status": "not_found"} 
 
 # ── File Upload ─────────────────────────────
 from fastapi import UploadFile, File

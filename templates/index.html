@@ -841,7 +841,7 @@
             color: var(--text-primary);
             resize: none;
             min-height: 20px;
-            max-height: 160px;
+            max-height: 400px;  /* ✨ از 160px به 400px */
             line-height: 1.5;
             padding: 4px 0;
         }
@@ -1870,7 +1870,7 @@
 
                 <p class="input-hint">
                     <span>Enter ↵ to send · Shift+Enter for new line</span>
-                    <span class="char-counter" id="char-counter">0 / 150000</span>
+                    <span class="char-counter" id="char-counter">0 / 200000</span>
                     <label class="auto-scroll-toggle">
                         <input type="checkbox" id="auto-scroll-toggle" checked>
                         <span class="toggle-slider"></span>
@@ -1958,1158 +1958,820 @@
     </div>
 
     <script>
-        const activeSessionId = "{{ active_session_id or '' }}";
-        let currentEditingChatId = null;
-        let originalChatTitle = "";
-        let messageTimestamps = {};
-        let autoScrollEnabled = true;
-        let currentEditingInstructionId = null;
-        let MAX_CHARS = 150000;
-        let typingTimerInterval = null;
-        let typingSeconds = 0;
+const activeSessionId = "{{ active_session_id or '' }}";
+let currentEditingChatId = null;
+let originalChatTitle = "";
+let autoScrollEnabled = true;
+let currentEditingInstructionId = null;
+let MAX_CHARS = 200000;  // ✨ پیش‌فرض جدید
+let typingTimerInterval = null;
+let typingSeconds = 0;
 
-        // ── Load Config ─────────────────────────────
-        async function loadConfig() {
-            try {
-                const res = await fetch('/api/config');
-                const data = await res.json();
-                MAX_CHARS = data.max_chars || 150000;
-            } catch (e) {
-                console.error('[LOAD-CONFIG]', e);
-            }
-        }
+// ── Load Config ─────────────────────────────
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        MAX_CHARS = data.max_chars || 200000;  // ✨ آپدیت
+        console.log('[CONFIG] MAX_CHARS loaded:', MAX_CHARS);
+    } catch (e) {
+        console.error('[LOAD-CONFIG]', e);
+        MAX_CHARS = 200000;  // ✨ fallback
+    }
+}
 
-        // ── Theme Toggle ───────────────────────────────
-        function toggleTheme() {
-            const body = document.body;
-            const icon = document.getElementById('theme-icon');
-            const currentTheme = body.getAttribute('data-theme');
-            
-            if (currentTheme === 'light') {
-                body.removeAttribute('data-theme');
-                icon.className = 'fas fa-moon';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                body.setAttribute('data-theme', 'light');
-                icon.className = 'fas fa-sun';
-                localStorage.setItem('theme', 'light');
-            }
-        }
+// ── Theme Toggle ───────────────────────────────
+function toggleTheme() {
+    const body = document.body;
+    const icon = document.getElementById('theme-icon');
+    if (body.getAttribute('data-theme') === 'light') {
+        body.removeAttribute('data-theme');
+        icon.className = 'fas fa-moon';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.setAttribute('data-theme', 'light');
+        icon.className = 'fas fa-sun';
+        localStorage.setItem('theme', 'light');
+    }
+}
 
-        // Load saved theme
-        if (localStorage.getItem('theme') === 'light') {
-            document.body.setAttribute('data-theme', 'light');
-            document.getElementById('theme-icon').className = 'fas fa-sun';
-        }
+// Load saved theme
+if (localStorage.getItem('theme') === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+    document.getElementById('theme-icon').className = 'fas fa-sun';
+}
 
-        // ── Export Menu ────────────────────────────────
-        function toggleExportMenu() {
-            document.getElementById('export-menu').classList.toggle('open');
-        }
+// ── Export Menu ────────────────────────────────
+function toggleExportMenu() {
+    document.getElementById('export-menu').classList.toggle('open');
+}
 
-        // Close export menu on outside click
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('export-menu');
-            const btn = e.target.closest('.theme-toggle');
-            if (menu && !menu.contains(e.target) && !btn) {
-                menu.classList.remove('open');
-            }
-        });
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('export-menu');
+    if (menu && !menu.contains(e.target) && !e.target.closest('.theme-toggle')) {
+        menu.classList.remove('open');
+    }
+});
 
-        // ── Export Chat ────────────────────────────────
-        function exportChat(format) {
-            const messages = document.getElementById('chat-messages');
-            const msgWrappers = messages.querySelectorAll('.msg-wrapper');
-            
-            if (msgWrappers.length === 0) {
-                alert('No messages to export!');
-                return;
-            }
-
-            let content = '';
-
-            if (format === 'json') {
-                const data = [];
-                msgWrappers.forEach(wrapper => {
-                    const role = wrapper.classList.contains('user') ? 'user' : 'assistant';
-                    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
-                    const timeEl = wrapper.querySelector('.msg-timestamp');
-                    data.push({
-                        role: role,
-                        content: bubble ? bubble.innerText : '',
-                        timestamp: timeEl ? timeEl.getAttribute('data-time') : ''
-                    });
-                });
-                content = JSON.stringify(data, null, 2);
-            } else if (format === 'markdown') {
-                content = `# OWL Studio Chat Export\n`;
-                content += `Date: ${new Date().toLocaleString()}\n\n`;
-                content += `---\n\n`;
-                msgWrappers.forEach(wrapper => {
-                    const role = wrapper.classList.contains('user') ? '**You**' : '**OWL**';
-                    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
-                    const timeEl = wrapper.querySelector('.msg-timestamp');
-                    const time = timeEl ? timeEl.innerText : '';
-                    content += `${role} _(${time})_\n\n`;
-                    content += `${bubble ? bubble.innerText : ''}\n\n`;
-                    content += `---\n\n`;
-                });
-            } else if (format === 'txt') {
-                content = `OWL Studio Chat Export\n`;
-                content += `Date: ${new Date().toLocaleString()}\n\n`;
-                content += `========================\n\n`;
-                msgWrappers.forEach(wrapper => {
-                    const role = wrapper.classList.contains('user') ? 'You' : 'OWL';
-                    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
-                    const timeEl = wrapper.querySelector('.msg-timestamp');
-                    const time = timeEl ? timeEl.innerText : '';
-                    content += `[${time}] ${role}:\n`;
-                    content += `${bubble ? bubble.innerText : ''}\n\n`;
-                    content += `========================\n\n`;
-                });
-            }
-
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `owl-chat-${Date.now()}.${format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt'}`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            document.getElementById('export-menu').classList.remove('open');
-        }
-
-        // ── Character Counter ──────────────────────────
-
-        function updateCharCounter() {
-            const textarea = document.getElementById('prompt-input');
-            const counter = document.getElementById('char-counter');
-            const length = textarea.value.length;
-            
-            counter.textContent = `${length} / ${MAX_CHARS}`;
-            
-            counter.classList.remove('warning', 'danger');
-            if (length > MAX_CHARS * 0.9) {
-                counter.classList.add('danger');
-            } else if (length > MAX_CHARS * 0.7) {
-                counter.classList.add('warning');
-            }
-        }
-
-        // ── Auto-scroll Toggle ─────────────────────────
-        document.getElementById('auto-scroll-toggle').addEventListener('change', (e) => {
-            autoScrollEnabled = e.target.checked;
-            localStorage.setItem('autoScroll', autoScrollEnabled);
-        });
-
-        // Load saved auto-scroll preference
-        if (localStorage.getItem('autoScroll') === 'false') {
-            document.getElementById('auto-scroll-toggle').checked = false;
-            autoScrollEnabled = false;
-        }
-
-        // ── Scroll to Bottom ───────────────────────────
-        function scrollToBottom() {
-            const container = document.getElementById('chat-messages');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Show/hide scroll button based on scroll position
-        document.getElementById('chat-messages').addEventListener('scroll', function() {
-            const btn = document.getElementById('scroll-bottom-btn');
-            const isNearBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 100;
-            
-            if (isNearBottom) {
-                btn.classList.remove('visible');
-            } else {
-                btn.classList.add('visible');
-            }
-        });
-
-        // ── marked + hljs setup ──────────────────────────
-        marked.setOptions({
-            highlight: (code, lang) =>
-                hljs.highlight(code, { language: hljs.getLanguage(lang) ? lang : 'plaintext' }).value,
-            langPrefix: 'hljs language-'
-        });
-
-        // ── DOMContentLoaded ─────────────────────────────
-        document.addEventListener("DOMContentLoaded", () => {
-            // Load config from server
-            loadConfig();
-            
-            // Restore draft from localStorage
-            const savedDraft = localStorage.getItem('draft_prompt');
-            if (savedDraft) {
-                const promptArea = document.getElementById('prompt-input');
-                promptArea.value = savedDraft;
-                promptArea.style.height = 'auto';
-                promptArea.style.height = Math.min(promptArea.scrollHeight, 160) + 'px';
-                updateCharCounter();
-            }
-
-            // Hide loading skeleton after content loads
-            setTimeout(() => {
-                const skeleton = document.getElementById('loading-skeleton');
-                if (skeleton) skeleton.remove();
-                
-                if (activeSessionId) {
-                    hydrateExistingMessages(activeSessionId);
-                } else {
-                    showEmptyState();
-                }
-            }, 1500);
-
-            document.addEventListener('click', () => {
-                document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
-            });
-
-            document.getElementById('modal-title-input').addEventListener('input', (e) => {
-                const val = e.target.value.trim();
-                document.getElementById('modal-save-btn').disabled =
-                    (val === "" || val === originalChatTitle);
-            });
-
-            // auto-resize textarea
-            const promptArea = document.getElementById('prompt-input');
-            promptArea.addEventListener('input', () => {
-                promptArea.style.height = 'auto';
-                promptArea.style.height = Math.min(promptArea.scrollHeight, 160) + 'px';
-                updateCharCounter();
-                // Save draft to localStorage
-                localStorage.setItem('draft_prompt', promptArea.value);
-            });
-
-            // keyboard submit
-            promptArea.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    document.getElementById('generation-form').requestSubmit();
-                }
-            });
-
-            // form submit
-            document.getElementById('generation-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const promptInput = document.getElementById('prompt-input');
-                const submitBtn   = document.getElementById('submit-btn');
-                const promptText  = promptInput.value.trim();
-
-                if (!promptText || !activeSessionId) return;
-
-                // Check character limit
-                if (promptText.length > MAX_CHARS) {
-                    alert(`Message too long! Maximum ${MAX_CHARS} characters allowed.`);
-                    return;
-                }
-
-                appendMessageBubble('user', promptText);
-                promptInput.value = '';
-                promptInput.style.height = 'auto';
-                updateCharCounter();
-                // Clear draft after sending
-                localStorage.removeItem('draft_prompt');
-
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
-
-                // show typing indicator
-                const typingEl = showTypingIndicator();
-
-                fetch(`/api/chat/${activeSessionId}/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptText })
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
-                    if (data.status === 'processing' && data.message_id) {
-                        pollMessageStatus(data.message_id, typingEl);
-                    } else {
-                        removeTypingIndicator(typingEl);
-                        appendMessageBubble('assistant', data.response || data.content || 'No response.');
-                    }
-                })
-                .catch(err => {
-                    console.error('[SUBMIT-ERROR]', err);
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
-                    removeTypingIndicator(typingEl);
-                    appendMessageBubble('assistant', '⚠️ **Connection error.** Please try again.');
-                });
-            });    
-        });
-
-        // ── Show Empty State ────────────────────────────
-        function showEmptyState() {
-            const container = document.getElementById('chat-messages');
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-crow"></i></div>
-                    <span class="empty-state-text">Session initialized — Start a conversation</span>
-                </div>
-            `;
-        }
-
-        // ── Typing Timer ────────────────────────────
-        function startTypingTimer() {
-            typingSeconds = 0;
-            const timerEl = document.getElementById('typing-timer');
-            if (timerEl) timerEl.textContent = '0s';
-            
-            typingTimerInterval = setInterval(() => {
-                typingSeconds++;
-                const timerEl = document.getElementById('typing-timer');
-                if (timerEl) {
-                    if (typingSeconds < 60) {
-                        timerEl.textContent = `${typingSeconds}s`;
-                    } else {
-                        const mins = Math.floor(typingSeconds / 60);
-                        const secs = typingSeconds % 60;
-                        timerEl.textContent = `${mins}m ${secs}s`;
-                    }
-                }
-            }, 1000);
-        }
-
-        function stopTypingTimer() {
-            if (typingTimerInterval) {
-                clearInterval(typingTimerInterval);
-                typingTimerInterval = null;
-            }
-        }
-
-        // ── TYPING INDICATOR ─────────────────────────────
-        function showTypingIndicator() {
-            const container = document.getElementById('chat-messages');
-
-            // remove empty state if present
-            const emptyState = container.querySelector('.empty-state');
-            if (emptyState) emptyState.remove();
-
-            const wrapper = document.createElement('div');
-            wrapper.className = 'typing-indicator-wrapper';
-            wrapper.id = 'typing-indicator';
-
-            wrapper.innerHTML = `
-                <div class="msg-label owl">
-                    <i class="fas fa-crow" style="font-size:9px"></i> OWL
-                </div>
-                <div class="typing-bubble">
-                    <div class="typing-bars">
-                        <div class="typing-bar"></div>
-                        <div class="typing-bar"></div>
-                        <div class="typing-bar"></div>
-                        <div class="typing-bar"></div>
-                        <div class="typing-bar"></div>
-                    </div>
-                    <div class="typing-dots">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-                    <span class="typing-text">Generating response...</span>
-                    <span class="typing-timer" id="typing-timer" style="font-size:9px;color:var(--text-dim);margin-left:8px"></span>
-                    <span class="typing-timer" id="typing-timer" style="font-size:9px;color:var(--text-dim);margin-left:8px">0s</span>
-                    <button id="stop-btn-${Date.now()}" class="stop-poll-btn" 
-                        style="background:transparent;border:1px solid var(--red);color:var(--red);
-                        font-family:var(--font-mono);font-size:10px;padding:2px 10px;border-radius:5px;
-                        cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:8px;transition:all 0.15s"
-                        onclick="stopPolling(this)">
-                        <i class="fas fa-stop" style="font-size:9px"></i> Stop
-                    </button>                    
-                </div>
-            `;
-
-            container.appendChild(wrapper);
-            
-            // Start timer
-            startTypingTimer();
-            
-            if (autoScrollEnabled) {
-                container.scrollTop = container.scrollHeight;
-            }
-            return wrapper;
-        }
-
-        function removeTypingIndicator(el) {
-            stopTypingTimer();
-            if (el && el.parentNode) el.remove();
-        }
-
-        // ── MESSAGE BUBBLE ───────────────────────────────
-        function appendMessageBubble(role, content, messageId = null) {
-            const container = document.getElementById('chat-messages');
-
-            // remove empty state
-            const emptyState = container.querySelector('.empty-state');
-            if (emptyState) emptyState.remove();
-
-            const wrapper = document.createElement('div');
-            wrapper.className = `msg-wrapper ${role}`;
-            if (messageId) wrapper.id = `msg-${messageId}`;
-
-            // Generate timestamp
-            const now = new Date();
-            const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const fullTimestamp = now.toISOString();
-
-            if (role === 'user') {
-                const isLong = content.length > 300;
-                const bubbleClass = isLong ? 'msg-bubble-user collapsed' : 'msg-bubble-user';
-                
-                wrapper.innerHTML = `
-                    <div class="msg-label you">
-                        <i class="fas fa-user" style="font-size:8px"></i> You
-                    </div>
-                    <div class="${bubbleClass}" style="position:relative">
-                        ${escapeHtml(content)}
-                    </div>
-                    ${isLong ? `<button type="button" class="show-more-btn" onclick="toggleShowMore(this)"><i class="fas fa-chevron-down" style="font-size:8px"></i> Show More</button>` : ''}
-                    <div class="msg-timestamp" data-time="${fullTimestamp}">${timestamp}</div>
-                    <div class="msg-actions">
-                        <button class="msg-action-btn" onclick="editMessage(this)" title="Edit"><i class="fas fa-edit" style="font-size:9px"></i> Edit</button>
-                        <button class="msg-action-btn" onclick="copyUserMessage(this)" title="Copy"><i class="far fa-copy" style="font-size:9px"></i> Copy</button>
-                        <button class="msg-action-btn" onclick="retryMessage(this)" title="Retry"><i class="fas fa-redo" style="font-size:9px"></i> Retry</button>
-                    </div>
-                `;
-            } else {
-                const bubbleDiv = document.createElement('div');
-                bubbleDiv.className = 'msg-bubble-assistant markdown-body';
-                bubbleDiv.innerHTML = marked.parse(content);
-
-                // decorate code blocks
-                bubbleDiv.querySelectorAll('pre').forEach(preEl => {
-                    const codeEl = preEl.querySelector('code');
-                    if (!codeEl) return;
-                    hljs.highlightElement(codeEl);
-
-                    let lang = 'text';
-                    codeEl.className.split(' ').forEach(cls => {
-                        if (cls.startsWith('language-')) lang = cls.replace('language-', '');
-                    });
-                    const langLabel = lang.charAt(0).toUpperCase() + lang.slice(1);
-
-                    codeEl.style.fontFamily = 'var(--font-mono)';
-                    preEl.className = 'code-block-pre';
-
-                    const blockWrapper = document.createElement('div');
-                    blockWrapper.className = 'code-block-wrapper';
-
-                    const header = document.createElement('div');
-                    header.className = 'code-block-header';
-                    header.innerHTML = `
-                        <span class="code-lang-tag">${langLabel}</span>
-                        <button type="button" class="copy-btn" onclick="copyCode(this)">
-                            <i class="far fa-copy" style="font-size:10px"></i> Copy
-                        </button>
-                    `;
-
-                    preEl.parentNode.insertBefore(blockWrapper, preEl);
-                    blockWrapper.appendChild(header);
-                    blockWrapper.appendChild(preEl);
-                });
-
-                const labelDiv = document.createElement('div');
-                labelDiv.className = 'msg-label owl';
-                labelDiv.innerHTML = '<i class="fas fa-crow" style="font-size:9px"></i> OWL';
-
-                // Timestamp
-                const timestampDiv = document.createElement('div');
-                timestampDiv.className = 'msg-timestamp';
-                timestampDiv.setAttribute('data-time', fullTimestamp);
-                timestampDiv.textContent = timestamp;
-
-                // Actions
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'msg-actions';
-                actionsDiv.innerHTML = `
-                    <button class="msg-action-btn" onclick="regenerateResponse(this)" title="Regenerate">
-                        <i class="fas fa-sync-alt" style="font-size:9px"></i> Regenerate
-                    </button>
-                    <button class="msg-action-btn" onclick="copyUserMessage(this)" title="Copy">
-                        <i class="far fa-copy" style="font-size:9px"></i> Copy
-                    </button>
-                `;
-
-                wrapper.appendChild(labelDiv);
-                wrapper.appendChild(bubbleDiv);
-                wrapper.appendChild(timestampDiv);
-                wrapper.appendChild(actionsDiv);
-                container.appendChild(wrapper);
-                if (autoScrollEnabled) {
-                    container.scrollTop = container.scrollHeight;
-                }
-                return;
-            }
-
-            container.appendChild(wrapper);
-            if (autoScrollEnabled) {
-                container.scrollTop = container.scrollHeight;
-            }
-        }
-
-        // ── Edit Message ────────────────────────────────
-        function editMessage(btn) {
-            const wrapper = btn.closest('.msg-wrapper');
-            const bubble = wrapper.querySelector('.msg-bubble-user');
-            const originalText = bubble.innerText;
-            
-            // Replace bubble with textarea
-            const textarea = document.createElement('textarea');
-            textarea.className = 'edit-textarea';
-            textarea.value = originalText;
-            textarea.rows = Math.max(2, originalText.split('\n').length);
-            
-            // Add edit actions
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'edit-actions';
-            actionsDiv.innerHTML = `
-                <button class="edit-cancel-btn" onclick="cancelEdit(this)">Cancel</button>
-                <button class="edit-save-btn" onclick="saveEdit(this)">Save & Send</button>
-            `;
-            
-            bubble.style.display = 'none';
-            bubble.parentNode.insertBefore(textarea, bubble.nextSibling);
-            textarea.parentNode.insertBefore(actionsDiv, textarea.nextSibling);
-            
-            textarea.focus();
-        }
-
-        function cancelEdit(btn) {
-            const wrapper = btn.closest('.msg-wrapper');
-            const bubble = wrapper.querySelector('.msg-bubble-user');
-            const textarea = wrapper.querySelector('.edit-textarea');
-            const actions = wrapper.querySelector('.edit-actions');
-            
-            bubble.style.display = 'block';
-            textarea.remove();
-            actions.remove();
-        }
-
-        function saveEdit(btn) {
-            const wrapper = btn.closest('.msg-wrapper');
-            const textarea = wrapper.querySelector('.edit-textarea');
-            const newText = textarea.value.trim();
-            
-            if (!newText) return;
-            
-            // Remove the edited message and all subsequent messages
-            const container = document.getElementById('chat-messages');
-            const allWrappers = container.querySelectorAll('.msg-wrapper');
-            let found = false;
-            allWrappers.forEach(w => {
-                if (w === wrapper) found = true;
-                if (found) w.remove();
-            });
-            
-            // Send new message
-            document.getElementById('prompt-input').value = newText;
-            document.getElementById('generation-form').requestSubmit();
-        }
-
-        // ── Regenerate Response ─────────────────────────
-        function regenerateResponse(btn) {
-            const wrapper = btn.closest('.msg-wrapper');
-            const container = document.getElementById('chat-messages');
-            
-            // Find the last user message before this assistant message
-            const allWrappers = container.querySelectorAll('.msg-wrapper');
-            let lastUserMessage = null;
-            
-            for (let i = allWrappers.length - 1; i >= 0; i--) {
-                if (allWrappers[i] === wrapper) continue;
-                if (allWrappers[i].classList.contains('user')) {
-                    lastUserMessage = allWrappers[i];
-                    break;
-                }
-            }
-            
-            if (!lastUserMessage) return;
-            
-            const bubble = lastUserMessage.querySelector('.msg-bubble-user');
-            const prompt = bubble.innerText;
-            
-            // Remove all messages from this assistant message onwards
-            let found = false;
-            allWrappers.forEach(w => {
-                if (w === wrapper) found = true;
-                if (found) w.remove();
-            });
-            
-            // Resend the message
-            document.getElementById('prompt-input').value = prompt;
-            document.getElementById('generation-form').requestSubmit();
-        }
-
-        function escapeHtml(str) {
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        async function copyCode(btn) {
-            const pre = btn.closest('.code-block-wrapper').querySelector('pre code');
-            if (!pre) return;
-            try {
-                await navigator.clipboard.writeText(pre.innerText);
-                btn.classList.add('copied');
-                btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
-                setTimeout(() => {
-                    btn.classList.remove('copied');
-                    btn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
-                }, 2000);
-            } catch (e) { console.error(e); }
-        }
-
-        
-        async function copyUserMessage(btn) {
-            const wrapper = btn.closest('.msg-wrapper');
+// ── Export Chat ────────────────────────────────
+function exportChat(format) {
+    const messages = document.getElementById('chat-messages');
+    const msgWrappers = messages.querySelectorAll('.msg-wrapper');
+    if (msgWrappers.length === 0) {
+        alert('No messages to export!');
+        return;
+    }
+    let content = '';
+    if (format === 'json') {
+        const data = [];
+        msgWrappers.forEach(wrapper => {
+            const role = wrapper.classList.contains('user') ? 'user' : 'assistant';
             const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
-            const text = bubble ? bubble.innerText : btn.getAttribute('data-content');
-            try {
-                await navigator.clipboard.writeText(text);
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                }, 2000);
-            } catch(e) { console.error(e); }
-        }
-
-        async function retryMessage(btn) {
-            const wrapper = btn.closest('.msg-wrapper');
-            const bubble = wrapper.querySelector('.msg-bubble-user');
-            const prompt = bubble ? bubble.innerText : btn.getAttribute('data-prompt');
-            
-            if (!prompt || !activeSessionId) return;
-
-            // remove last assistant response if exists
-            const messages = document.getElementById('chat-messages');
-            const allWrappers = messages.querySelectorAll('.msg-wrapper');
-            const lastWrapper = allWrappers[allWrappers.length - 1];
-            if (lastWrapper && lastWrapper.classList.contains('assistant')) {
-                lastWrapper.remove();
-            }
-
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
-
-            const typingEl = showTypingIndicator();
-
-            try {
-                const response = await fetch(`/api/chat/${activeSessionId}/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
-                });
-
-                if (!response.ok) throw new Error("Backend error.");
-                const data = await response.json();
-
-                if (data.status === 'processing' && data.message_id) {
-                    // Poll until done — survives refresh because work is in background
-                    pollMessageStatus(data.message_id, typingEl);
-                } else {
-                    const reply = data.response || data.content || "No response received.";
-                    removeTypingIndicator(typingEl);
-                    appendMessageBubble('assistant', reply);
-                }
-
-            } catch (err) {
-                console.error("[SUBMIT-ERROR]", err);
-                removeTypingIndicator(typingEl);
-                appendMessageBubble('assistant', '⚠️ **Connection error.** Could not reach the backend. Please try again.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
-            }
-        }        
-
-
-        // ── HYDRATE MESSAGES ─────────────────────────────
-        async function hydrateExistingMessages(sessionId) {
-            const container = document.getElementById('chat-messages');
-            container.innerHTML = '';
-            try {
-                const res = await fetch(`/api/chat/${sessionId}/messages`);
-                const messages = await res.json();
-                if (messages.length === 0) {
-                    showEmptyState();
-                    return;
-                }
-                messages.forEach(m => {
-                    if (m.status === 'pending' && m.role === 'assistant') {
-                        const typingEl = showTypingIndicator();
-                        pollMessageStatus(m.id, typingEl);
-                    } else if (m.content) {
-                        appendMessageBubble(m.role, m.content, m.id);
-                    }
-                });
-                if (autoScrollEnabled) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            } catch (e) { console.error('[HYDRATE]', e); }
-        }
-
-        // ── SESSION MANAGEMENT ───────────────────────────
-        async function createNewSession() {
-            try {
-                const res  = await fetch('/api/chat/new', { method: 'POST' });
-                const data = await res.json();
-                window.location.href = `/chat/${data.session_id}`;
-            } catch (e) { console.error('[NEW-SESSION]', e); }
-        }
-
-        function toggleActionDropdown(event, chatId) {
-            event.stopPropagation();
-            document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
-                if (d.id !== `dropdown-${chatId}`) d.classList.add('hidden');
+            const timeEl = wrapper.querySelector('.msg-timestamp');
+            data.push({
+                role: role,
+                content: bubble ? bubble.innerText : '',
+                timestamp: timeEl ? timeEl.getAttribute('data-time') : ''
             });
-            document.getElementById(`dropdown-${chatId}`).classList.toggle('hidden');
+        });
+        content = JSON.stringify(data, null, 2);
+    } else if (format === 'markdown') {
+        content = `# OWL Studio Chat Export\nDate: ${new Date().toLocaleString()}\n\n---\n\n`;
+        msgWrappers.forEach(wrapper => {
+            const role = wrapper.classList.contains('user') ? '**You**' : '**OWL**';
+            const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+            const timeEl = wrapper.querySelector('.msg-timestamp');
+            content += `${role} _(${timeEl ? timeEl.innerText : ''})_\n\n${bubble ? bubble.innerText : ''}\n\n---\n\n`;
+        });
+    } else if (format === 'txt') {
+        content = `OWL Studio Chat Export\nDate: ${new Date().toLocaleString()}\n\n========================\n\n`;
+        msgWrappers.forEach(wrapper => {
+            const role = wrapper.classList.contains('user') ? 'You' : 'OWL';
+            const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+            const timeEl = wrapper.querySelector('.msg-timestamp');
+            content += `[${timeEl ? timeEl.innerText : ''}] ${role}:\n${bubble ? bubble.innerText : ''}\n\n========================\n\n`;
+        });
+    }
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `owl-chat-${Date.now()}.${format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt'}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    document.getElementById('export-menu').classList.remove('open');
+}
+
+// ── Character Counter ──────────────────────────
+function updateCharCounter() {
+    const textarea = document.getElementById('prompt-input');
+    const counter = document.getElementById('char-counter');
+    const length = textarea.value.length;
+    
+    // ✨ فرمت بهتر برای اعداد بزرگ
+    const formatNumber = (num) => {
+        if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+        return num.toString();
+    };
+    
+    counter.textContent = `${formatNumber(length)} / ${formatNumber(MAX_CHARS)}`;
+    counter.classList.remove('warning', 'danger');
+    
+    if (length > MAX_CHARS * 0.95) counter.classList.add('danger');
+    else if (length > MAX_CHARS * 0.8) counter.classList.add('warning');
+}
+
+// ── Auto-scroll Toggle ─────────────────────────
+document.getElementById('auto-scroll-toggle').addEventListener('change', (e) => {
+    autoScrollEnabled = e.target.checked;
+    localStorage.setItem('autoScroll', autoScrollEnabled);
+});
+if (localStorage.getItem('autoScroll') === 'false') {
+    document.getElementById('auto-scroll-toggle').checked = false;
+    autoScrollEnabled = false;
+}
+
+// ── Scroll to Bottom ───────────────────────────
+function scrollToBottom() {
+    const container = document.getElementById('chat-messages');
+    container.scrollTop = container.scrollHeight;
+}
+
+document.getElementById('chat-messages').addEventListener('scroll', function() {
+    const btn = document.getElementById('scroll-bottom-btn');
+    const isNearBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 100;
+    btn.classList.toggle('visible', !isNearBottom);
+});
+
+// ── marked + hljs setup ──────────────────────────
+marked.setOptions({
+    highlight: (code, lang) => hljs.highlight(code, { language: hljs.getLanguage(lang) ? lang : 'plaintext' }).value,
+    langPrefix: 'hljs language-'
+});
+
+// ── DOMContentLoaded ─────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+    loadConfig();
+
+    const savedDraft = localStorage.getItem('draft_prompt');
+    if (savedDraft) {
+        const promptArea = document.getElementById('prompt-input');
+        promptArea.value = savedDraft;
+        promptArea.style.height = 'auto';
+        promptArea.style.height = Math.min(promptArea.scrollHeight, 160) + 'px';
+        updateCharCounter();
+    }
+
+    setTimeout(() => {
+        const skeleton = document.getElementById('loading-skeleton');
+        if (skeleton) skeleton.remove();
+        if (activeSessionId) {
+            hydrateExistingMessages(activeSessionId);
+        } else {
+            showEmptyState();
+        }
+    }, 1500);
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+    });
+
+    document.getElementById('modal-title-input').addEventListener('input', (e) => {
+        document.getElementById('modal-save-btn').disabled = (e.target.value.trim() === "" || e.target.value.trim() === originalChatTitle);
+    });
+
+    const promptArea = document.getElementById('prompt-input');
+    promptArea.addEventListener('input', () => {
+        promptArea.style.height = 'auto';
+        promptArea.style.height = Math.min(promptArea.scrollHeight, 160) + 'px';
+        updateCharCounter();
+        localStorage.setItem('draft_prompt', promptArea.value);
+    });
+
+    promptArea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('generation-form').requestSubmit();
+        }
+    });
+
+    // ── FORM SUBMIT (CORRECTED) ─────────────────
+    document.getElementById('generation-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const promptInput = document.getElementById('prompt-input');
+        const submitBtn   = document.getElementById('submit-btn');
+        const promptText  = promptInput.value.trim();
+
+        if (!promptText || !activeSessionId) return;
+        if (promptText.length > MAX_CHARS) {
+            alert(`Message too long! Maximum ${MAX_CHARS} characters allowed.`);
+            return;
         }
 
-        function openRenameModal(event, el) {
-            event.stopPropagation();
-            currentEditingChatId = el.getAttribute('data-id');
-            originalChatTitle    = el.getAttribute('data-title').trim();
+        appendMessageBubble('user', promptText);
+        promptInput.value = '';
+        promptInput.style.height = 'auto';
+        updateCharCounter();
+        localStorage.removeItem('draft_prompt');
 
-            const input = document.getElementById('modal-title-input');
-            input.value = originalChatTitle;
-            document.getElementById('modal-save-btn').disabled = true;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
 
-            document.getElementById('gemini-modal-backdrop').classList.add('open');
-            input.focus();
-            input.select();
-        }
+        const typingEl = showTypingIndicator(null);  // initially null, will set messageId after response
 
-        function closeRenameModal() {
-            document.getElementById('gemini-modal-backdrop').classList.remove('open');
-            currentEditingChatId = null;
-            originalChatTitle    = "";
-        }
+        try {
+            const res = await fetch(`/api/chat/${activeSessionId}/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptText })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
 
-        async function submitRenamePipeline() {
-            const newTitle = document.getElementById('modal-title-input').value.trim();
-            if (!newTitle || newTitle === originalChatTitle || !currentEditingChatId) return;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
 
-            try {
-                const res = await fetch(`/api/chat/${currentEditingChatId}/rename`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: newTitle })
-                });
-                if (!res.ok) throw new Error();
-
-                const titleSpan = document.getElementById(`session-text-${currentEditingChatId}`);
-                if (titleSpan) titleSpan.textContent = newTitle;
-
-                const actionBtn = document.querySelector(`button[data-id="${currentEditingChatId}"]`);
-                if (actionBtn) actionBtn.setAttribute('data-title', newTitle);
-
-                closeRenameModal();
-            } catch (e) { console.error('[RENAME]', e); }
-        }
-
-        async function triggerDeletePipeline(event, chatId) {
-            event.stopPropagation();
-            if (!confirm('Delete this session?')) return;
-            try {
-                const res = await fetch(`/api/chat/${chatId}/delete`, { method: 'POST' });
-                if (!res.ok) throw new Error();
-                document.getElementById(`session-item-${chatId}`).remove();
-                if (activeSessionId == chatId) window.location.href = '/';
-            } catch (e) { console.error('[DELETE]', e); }
-        }
-
-        // CSS spin keyframe injection
-        const styleEl = document.createElement('style');
-        styleEl.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-        document.head.appendChild(styleEl);
-
-        function pollMessageStatus(messageId, typingEl) {
-            const POLL_INTERVAL_MS = 3000;  // از 2 ثانیه به 3 ثانیه
-            const MAX_ATTEMPTS = 300;       // از 150 به 300 (15 دقیقه)
-            let attempts = 0;
-            let stopped = false;
-
-            const interval = setInterval(async () => {
-                if (stopped) { clearInterval(interval); return; }
-                attempts++;
-                if (attempts > MAX_ATTEMPTS) {
-                    clearInterval(interval);
-                    removeTypingIndicator(typingEl);
-                    appendMessageBubble('assistant', '⚠️ **Timeout.** The response took too long. Please try again or check your connection.');
-                    return;
-                }
-                try {
-                    const res = await fetch(`/api/message/${messageId}/status`);
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    console.log(`[POLL] attempt=${attempts} status=${data.status}`);
-                    if (data.status === 'done' || data.status === 'error') {
-                        clearInterval(interval);
-                        removeTypingIndicator(typingEl);
-                        appendMessageBubble('assistant', data.content || '⚠️ Empty response.');
-                    }
-                } catch (e) { console.warn('[POLL] hiccup:', e); }
-            }, POLL_INTERVAL_MS);
-
-            // attach interval ref to typingEl for stop button
-            if (typingEl) typingEl._pollInterval = interval;
-            if (typingEl) typingEl._stopped = () => { stopped = true; };
-        }
-
-        function stopPolling(btn) {
-            const wrapper = btn.closest('.typing-indicator-wrapper');
-            if (!wrapper) return;
-            if (wrapper._stopped) wrapper._stopped();
-            if (wrapper._pollInterval) clearInterval(wrapper._pollInterval);
-            removeTypingIndicator(wrapper);
-            appendMessageBubble('assistant', '⏹ *Generation stopped by user.*');
-        }
-
-        // ── SETTINGS MODAL ───────────────────────────
-        function openSettingsModal() {
-            document.getElementById('settings-modal-backdrop').classList.add('open');
-            loadActiveInstruction();
-            loadInstructionsList();
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settings-modal-backdrop').classList.remove('open');
-            currentEditingInstructionId = null;
-        }
-
-        function switchSettingsTab(tab, btn) {
-            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-            
-            btn.classList.add('active');
-            document.getElementById(`settings-tab-${tab}`).classList.add('active');
-        }
-
-        // Load active instruction
-        async function loadActiveInstruction() {
-            try {
-                const res = await fetch('/api/instructions/active');
-                const data = await res.json();
-                
-                document.getElementById('instruction-title').value = data.title;
-                document.getElementById('instruction-content').value = data.content;
-                document.getElementById('instruction-active').checked = data.is_active;
-                currentEditingInstructionId = data.id;
-            } catch (e) {
-                console.error('[LOAD-INSTRUCTION]', e);
+            if (data.status === 'processing' && data.message_id) {
+                typingEl._messageId = data.message_id;
+                pollMessageStatus(data.message_id, typingEl);
+            } else {
+                removeTypingIndicator(typingEl);
+                appendMessageBubble('assistant', data.response || data.content || 'No response.');
             }
+        } catch (err) {
+            console.error('[SUBMIT-ERROR]', err);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
+            removeTypingIndicator(typingEl);
+            appendMessageBubble('assistant', '⚠️ Connection error. Please try again.');
         }
+    });
+});
 
-        // Save instruction
-        async function saveInstruction() {
-            const title = document.getElementById('instruction-title').value.trim();
-            const content = document.getElementById('instruction-content').value.trim();
-            const isActive = document.getElementById('instruction-active').checked;
-            
-            if (!title || !content) {
-                alert('Title and content are required!');
-                return;
-            }
-            
-            try {
-                let res;
-                if (currentEditingInstructionId) {
-                    res = await fetch(`/api/instructions/${currentEditingInstructionId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title, content, is_active: isActive })
-                    });
-                } else {
-                    res = await fetch('/api/instructions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title, content, is_active: isActive })
-                    });
-                }
-                
-                if (res.ok) {
-                    alert('Instruction saved successfully!');
-                    loadInstructionsList();
-                } else {
-                    throw new Error('Failed to save');
-                }
-            } catch (e) {
-                console.error('[SAVE-INSTRUCTION]', e);
-                alert('Failed to save instruction.');
-            }
+// ── Show Empty State ────────────────────────────
+function showEmptyState() {
+    document.getElementById('chat-messages').innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-crow"></i></div>
+            <span class="empty-state-text">Session initialized — Start a conversation</span>
+        </div>`;
+}
+
+// ── Typing Timer ────────────────────────────
+function startTypingTimer() {
+    typingSeconds = 0;
+    const timerEl = document.getElementById('typing-timer');
+    if (timerEl) timerEl.textContent = '0s';
+    typingTimerInterval = setInterval(() => {
+        typingSeconds++;
+        const timerEl = document.getElementById('typing-timer');
+        if (timerEl) {
+            timerEl.textContent = typingSeconds < 60 ? `${typingSeconds}s` : `${Math.floor(typingSeconds/60)}m ${typingSeconds%60}s`;
         }
+    }, 1000);
+}
+function stopTypingTimer() {
+    if (typingTimerInterval) {
+        clearInterval(typingTimerInterval);
+        typingTimerInterval = null;
+    }
+}
 
-        // Reset to default
-        async function resetToDefault() {
-            if (!confirm('Reset to default instructions? This will overwrite current content.')) return;
-            
-            try {
-                const res = await fetch('/api/instructions/initialize-default', { method: 'POST' });
-                if (res.ok) {
-                    loadActiveInstruction();
-                    alert('Default instructions restored!');
-                }
-            } catch (e) {
-                console.error('[RESET-INSTRUCTION]', e);
-            }
+// ── TYPING INDICATOR ─────────────────────────────
+function showTypingIndicator(messageId) {
+    const container = document.getElementById('chat-messages');
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) emptyState.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'typing-indicator-wrapper';
+    wrapper.id = 'typing-indicator';
+    wrapper._messageId = messageId;   // can be null initially
+
+    wrapper.innerHTML = `
+        <div class="msg-label owl"><i class="fas fa-crow" style="font-size:9px"></i> OWL</div>
+        <div class="typing-bubble">
+            <div class="typing-bars">
+                <div class="typing-bar"></div><div class="typing-bar"></div><div class="typing-bar"></div><div class="typing-bar"></div><div class="typing-bar"></div>
+            </div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+            </div>
+            <span class="typing-text">Generating response...</span>
+            <span class="typing-timer" id="typing-timer" style="font-size:9px;color:var(--text-dim);margin-left:8px">0s</span>
+            <button id="stop-btn-${Date.now()}" class="stop-poll-btn" 
+                style="background:transparent;border:1px solid var(--red);color:var(--red);
+                font-family:var(--font-mono);font-size:10px;padding:2px 10px;border-radius:5px;
+                cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:8px;transition:all 0.15s"
+                onclick="stopPolling(this)">
+                <i class="fas fa-stop" style="font-size:9px"></i> Stop
+            </button>
+        </div>`;
+    container.appendChild(wrapper);
+    startTypingTimer();
+    if (autoScrollEnabled) container.scrollTop = container.scrollHeight;
+    return wrapper;
+}
+
+function removeTypingIndicator(el) {
+    stopTypingTimer();
+    if (el && el.parentNode) el.remove();
+}
+
+// ── MESSAGE BUBBLE ───────────────────────────────
+function appendMessageBubble(role, content, messageId = null) {
+    const container = document.getElementById('chat-messages');
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) emptyState.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.className = `msg-wrapper ${role}`;
+    if (messageId) wrapper.id = `msg-${messageId}`;
+
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fullTimestamp = now.toISOString();
+
+    if (role === 'user') {
+        const isLong = content.length > 300;
+        const bubbleClass = isLong ? 'msg-bubble-user collapsed' : 'msg-bubble-user';
+        wrapper.innerHTML = `
+            <div class="msg-label you"><i class="fas fa-user" style="font-size:8px"></i> You</div>
+            <div class="${bubbleClass}" style="position:relative">${escapeHtml(content)}</div>
+            ${isLong ? `<button type="button" class="show-more-btn" onclick="toggleShowMore(this)"><i class="fas fa-chevron-down" style="font-size:8px"></i> Show More</button>` : ''}
+            <div class="msg-timestamp" data-time="${fullTimestamp}">${timestamp}</div>
+            <div class="msg-actions">
+                <button class="msg-action-btn" onclick="editMessage(this)"><i class="fas fa-edit" style="font-size:9px"></i> Edit</button>
+                <button class="msg-action-btn" onclick="copyUserMessage(this)"><i class="far fa-copy" style="font-size:9px"></i> Copy</button>
+                <button class="msg-action-btn" onclick="retryMessage(this)"><i class="fas fa-redo" style="font-size:9px"></i> Retry</button>
+            </div>`;
+    } else {
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'msg-bubble-assistant markdown-body';
+        bubbleDiv.innerHTML = marked.parse(content);
+        bubbleDiv.querySelectorAll('pre').forEach(preEl => {
+            const codeEl = preEl.querySelector('code');
+            if (!codeEl) return;
+            hljs.highlightElement(codeEl);
+            let lang = 'text';
+            codeEl.className.split(' ').forEach(cls => { if (cls.startsWith('language-')) lang = cls.replace('language-', ''); });
+            const langLabel = lang.charAt(0).toUpperCase() + lang.slice(1);
+            codeEl.style.fontFamily = 'var(--font-mono)';
+            preEl.className = 'code-block-pre';
+            const blockWrapper = document.createElement('div');
+            blockWrapper.className = 'code-block-wrapper';
+            const header = document.createElement('div');
+            header.className = 'code-block-header';
+            header.innerHTML = `<span class="code-lang-tag">${langLabel}</span><button type="button" class="copy-btn" onclick="copyCode(this)"><i class="far fa-copy" style="font-size:10px"></i> Copy</button>`;
+            preEl.parentNode.insertBefore(blockWrapper, preEl);
+            blockWrapper.appendChild(header);
+            blockWrapper.appendChild(preEl);
+        });
+
+        wrapper.innerHTML = `
+            <div class="msg-label owl"><i class="fas fa-crow" style="font-size:9px"></i> OWL</div>`;
+        wrapper.appendChild(bubbleDiv);
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'msg-timestamp';
+        timestampDiv.setAttribute('data-time', fullTimestamp);
+        timestampDiv.textContent = timestamp;
+        wrapper.appendChild(timestampDiv);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'msg-actions';
+        actionsDiv.innerHTML = `
+            <button class="msg-action-btn" onclick="regenerateResponse(this)"><i class="fas fa-sync-alt" style="font-size:9px"></i> Regenerate</button>
+            <button class="msg-action-btn" onclick="copyUserMessage(this)"><i class="far fa-copy" style="font-size:9px"></i> Copy</button>`;
+        wrapper.appendChild(actionsDiv);
+        container.appendChild(wrapper);
+        if (autoScrollEnabled) container.scrollTop = container.scrollHeight;
+        return;
+    }
+    container.appendChild(wrapper);
+    if (autoScrollEnabled) container.scrollTop = container.scrollHeight;
+}
+
+// ── Edit Message ────────────────────────────────
+function editMessage(btn) {
+    const wrapper = btn.closest('.msg-wrapper');
+    const bubble = wrapper.querySelector('.msg-bubble-user');
+    const originalText = bubble.innerText;
+    const textarea = document.createElement('textarea');
+    textarea.className = 'edit-textarea';
+    textarea.value = originalText;
+    textarea.rows = Math.max(2, originalText.split('\n').length);
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'edit-actions';
+    actionsDiv.innerHTML = `<button class="edit-cancel-btn" onclick="cancelEdit(this)">Cancel</button><button class="edit-save-btn" onclick="saveEdit(this)">Save & Send</button>`;
+    bubble.style.display = 'none';
+    bubble.parentNode.insertBefore(textarea, bubble.nextSibling);
+    textarea.parentNode.insertBefore(actionsDiv, textarea.nextSibling);
+    textarea.focus();
+}
+function cancelEdit(btn) {
+    const wrapper = btn.closest('.msg-wrapper');
+    const bubble = wrapper.querySelector('.msg-bubble-user');
+    wrapper.querySelector('.edit-textarea').remove();
+    wrapper.querySelector('.edit-actions').remove();
+    bubble.style.display = 'block';
+}
+function saveEdit(btn) {
+    const wrapper = btn.closest('.msg-wrapper');
+    const textarea = wrapper.querySelector('.edit-textarea');
+    const newText = textarea.value.trim();
+    if (!newText) return;
+    const container = document.getElementById('chat-messages');
+    const allWrappers = container.querySelectorAll('.msg-wrapper');
+    let found = false;
+    allWrappers.forEach(w => {
+        if (w === wrapper) found = true;
+        if (found) w.remove();
+    });
+    document.getElementById('prompt-input').value = newText;
+    document.getElementById('generation-form').requestSubmit();
+}
+
+// ── Regenerate Response ─────────────────────────
+function regenerateResponse(btn) {
+    const wrapper = btn.closest('.msg-wrapper');
+    const container = document.getElementById('chat-messages');
+    const allWrappers = container.querySelectorAll('.msg-wrapper');
+    let lastUserMessage = null;
+    for (let i = allWrappers.length - 1; i >= 0; i--) {
+        if (allWrappers[i] === wrapper) continue;
+        if (allWrappers[i].classList.contains('user')) {
+            lastUserMessage = allWrappers[i];
+            break;
         }
+    }
+    if (!lastUserMessage) return;
+    const prompt = lastUserMessage.querySelector('.msg-bubble-user').innerText;
+    let found = false;
+    allWrappers.forEach(w => {
+        if (w === wrapper) found = true;
+        if (found) w.remove();
+    });
+    document.getElementById('prompt-input').value = prompt;
+    document.getElementById('generation-form').requestSubmit();
+}
 
-        // Load instructions list
-        async function loadInstructionsList() {
-            try {
-                const res = await fetch('/api/instructions');
-                const instructions = await res.json();
-                
-                const listContainer = document.getElementById('instructions-list');
-                listContainer.innerHTML = instructions.map(inst => `
-                    <div class="settings-list-item ${inst.is_active ? 'active' : ''}">
-                        <div class="settings-list-item-header">
-                            <span class="settings-list-item-title">${escapeHtml(inst.title)}</span>
-                            ${inst.is_active ? '<span class="settings-list-item-badge">Active</span>' : ''}
-                        </div>
-                        <div class="settings-list-item-preview">${escapeHtml(inst.content.substring(0, 100))}...</div>
-                        <div class="settings-list-item-actions">
-                            <button class="settings-list-item-btn edit" onclick="editInstruction(${inst.id})">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            ${!inst.is_active ? `
-                                <button class="settings-list-item-btn activate" onclick="activateInstruction(${inst.id})">
-                                    <i class="fas fa-check"></i> Activate
-                                </button>
-                            ` : ''}
-                            <button class="settings-list-item-btn delete" onclick="deleteInstruction(${inst.id})">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (e) {
-                console.error('[LOAD-INSTRUCTIONS]', e);
-            }
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function copyCode(btn) {
+    const pre = btn.closest('.code-block-wrapper').querySelector('pre code');
+    if (!pre) return;
+    await navigator.clipboard.writeText(pre.innerText);
+    btn.classList.add('copied');
+    btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
+    setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<i class="far fa-copy" style="font-size:10px"></i> Copy';
+    }, 2000);
+}
+
+async function copyUserMessage(btn) {
+    const wrapper = btn.closest('.msg-wrapper');
+    const bubble = wrapper.querySelector('.msg-bubble-user, .msg-bubble-assistant');
+    const text = bubble ? bubble.innerText : btn.getAttribute('data-content');
+    await navigator.clipboard.writeText(text);
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;color:var(--green)"></i> Copied!';
+    setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+}
+
+async function retryMessage(btn) {
+    const wrapper = btn.closest('.msg-wrapper');
+    const bubble = wrapper.querySelector('.msg-bubble-user');
+    const prompt = bubble ? bubble.innerText : btn.getAttribute('data-prompt');
+    if (!prompt || !activeSessionId) return;
+    const messages = document.getElementById('chat-messages');
+    const allWrappers = messages.querySelectorAll('.msg-wrapper');
+    const lastWrapper = allWrappers[allWrappers.length - 1];
+    if (lastWrapper && lastWrapper.classList.contains('assistant')) lastWrapper.remove();
+
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
+    const typingEl = showTypingIndicator(null);
+    try {
+        const res = await fetch(`/api/chat/${activeSessionId}/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+        if (!res.ok) throw new Error("Backend error.");
+        const data = await res.json();
+        if (data.status === 'processing' && data.message_id) {
+            typingEl._messageId = data.message_id;
+            pollMessageStatus(data.message_id, typingEl);
+        } else {
+            removeTypingIndicator(typingEl);
+            appendMessageBubble('assistant', data.response || data.content || "No response.");
         }
+    } catch (err) {
+        removeTypingIndicator(typingEl);
+        appendMessageBubble('assistant', '⚠️ Connection error.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
+    }
+}
 
-        // Edit instruction
-        async function editInstruction(id) {
-            try {
-                const res = await fetch(`/api/instructions/${id}`);
-                const data = await res.json();
-                
-                document.getElementById('instruction-title').value = data.title;
-                document.getElementById('instruction-content').value = data.content;
-                document.getElementById('instruction-active').checked = data.is_active;
-                currentEditingInstructionId = id;
-                
-                // Switch to current tab
-                document.querySelectorAll('.settings-tab')[0].click();
-            } catch (e) {
-                console.error('[EDIT-INSTRUCTION]', e);
-            }
+// ── HYDRATE MESSAGES ─────────────────────────────
+async function hydrateExistingMessages(sessionId) {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '';
+    try {
+        const res = await fetch(`/api/chat/${sessionId}/messages`);
+        const messages = await res.json();
+        if (messages.length === 0) {
+            showEmptyState();
+            return;
         }
-
-        // Activate instruction
-        async function activateInstruction(id) {
-            try {
-                const res = await fetch(`/api/instructions/${id}/activate`, { method: 'POST' });
-                if (res.ok) {
-                    loadInstructionsList();
-                    loadActiveInstruction();
-                }
-            } catch (e) {
-                console.error('[ACTIVATE-INSTRUCTION]', e);
-            }
-        }
-
-        // Delete instruction
-        async function deleteInstruction(id) {
-            if (!confirm('Delete this instruction?')) return;
-            
-            try {
-                const res = await fetch(`/api/instructions/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    loadInstructionsList();
-                }
-            } catch (e) {
-                console.error('[DELETE-INSTRUCTION]', e);
-            }
-        }
-
-        // Create new instruction
-        function createNewInstruction() {
-            currentEditingInstructionId = null;
-            document.getElementById('instruction-title').value = '';
-            document.getElementById('instruction-content').value = '';
-            document.getElementById('instruction-active').checked = false;
-            
-            // Switch to current tab
-            document.querySelectorAll('.settings-tab')[0].click();
-        }
-
-        // Close settings modal on outside click
-        document.getElementById('settings-modal-backdrop').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                closeSettingsModal();
+        messages.forEach(m => {
+            if (m.status === 'pending' && m.role === 'assistant') {
+                const typingEl = showTypingIndicator(m.id);
+                pollMessageStatus(m.id, typingEl);
+            } else if (m.content) {
+                appendMessageBubble(m.role, m.content, m.id);
             }
         });
-        // ── Mobile Sidebar ─────────────────────────
-        function toggleMobileSidebar() {
-            const aside = document.querySelector('aside');
-            const overlay = document.getElementById('sidebar-overlay');
-            aside.classList.toggle('open');
-            overlay.classList.toggle('open');
-        }
+        if (autoScrollEnabled) container.scrollTop = container.scrollHeight;
+    } catch (e) { console.error('[HYDRATE]', e); }
+}
 
-// ── Show More for Long Prompts ──────────────
+// ── SESSION MANAGEMENT ───────────────────────────
+async function createNewSession() {
+    const res = await fetch('/api/chat/new', { method: 'POST' });
+    const data = await res.json();
+    window.location.href = `/chat/${data.session_id}`;
+}
+
+function toggleActionDropdown(event, chatId) {
+    event.stopPropagation();
+    document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+        if (d.id !== `dropdown-${chatId}`) d.classList.add('hidden');
+    });
+    document.getElementById(`dropdown-${chatId}`).classList.toggle('hidden');
+}
+
+function openRenameModal(event, el) {
+    event.stopPropagation();
+    currentEditingChatId = el.getAttribute('data-id');
+    originalChatTitle = el.getAttribute('data-title').trim();
+    const input = document.getElementById('modal-title-input');
+    input.value = originalChatTitle;
+    document.getElementById('modal-save-btn').disabled = true;
+    document.getElementById('gemini-modal-backdrop').classList.add('open');
+    input.focus(); input.select();
+}
+function closeRenameModal() {
+    document.getElementById('gemini-modal-backdrop').classList.remove('open');
+    currentEditingChatId = null;
+    originalChatTitle = "";
+}
+async function submitRenamePipeline() {
+    const newTitle = document.getElementById('modal-title-input').value.trim();
+    if (!newTitle || newTitle === originalChatTitle || !currentEditingChatId) return;
+    const res = await fetch(`/api/chat/${currentEditingChatId}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle })
+    });
+    if (res.ok) {
+        document.getElementById(`session-text-${currentEditingChatId}`).textContent = newTitle;
+        document.querySelector(`button[data-id="${currentEditingChatId}"]`).setAttribute('data-title', newTitle);
+        closeRenameModal();
+    }
+}
+async function triggerDeletePipeline(event, chatId) {
+    event.stopPropagation();
+    if (!confirm('Delete this session?')) return;
+    const res = await fetch(`/api/chat/${chatId}/delete`, { method: 'POST' });
+    if (res.ok) {
+        document.getElementById(`session-item-${chatId}`).remove();
+        if (activeSessionId == chatId) window.location.href = '/';
+    }
+}
+
+// CSS spin
+const styleEl = document.createElement('style');
+styleEl.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(styleEl);
+
+// ── POLLING & STOP ──────────────────────────────
+function pollMessageStatus(messageId, typingEl) {
+    const POLL_INTERVAL_MS = 3000;
+    const MAX_ATTEMPTS = 300;
+    let attempts = 0;
+    let stopped = false;
+
+    const interval = setInterval(async () => {
+        if (stopped) { clearInterval(interval); return; }
+        attempts++;
+        if (attempts > MAX_ATTEMPTS) {
+            clearInterval(interval);
+            removeTypingIndicator(typingEl);
+            appendMessageBubble('assistant', '⚠️ **Timeout.** The response took too long.');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/message/${messageId}/status`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'done' || data.status === 'error' || data.status === 'cancelled') {
+                clearInterval(interval);
+                removeTypingIndicator(typingEl);
+                if (data.status === 'done') appendMessageBubble('assistant', data.content || '⚠️ Empty response.');
+                else if (data.status === 'error') appendMessageBubble('assistant', data.content || '⚠️ Error.');
+                else if (data.status === 'cancelled') appendMessageBubble('assistant', '⏹ Generation stopped.');
+            }
+        } catch (e) { console.warn('[POLL]', e); }
+    }, POLL_INTERVAL_MS);
+
+    if (typingEl) typingEl._pollInterval = interval;
+    if (typingEl) typingEl._stopped = () => { stopped = true; };
+}
+
+async function stopPolling(btn) {
+    const wrapper = btn.closest('.typing-indicator-wrapper');
+    if (!wrapper) return;
+    
+    const pollInterval = wrapper._pollInterval;
+    const messageId = wrapper._messageId;
+    
+    console.log('[STOP] messageId:', messageId);  // لاگ برای دیباگ
+    
+    if (pollInterval) clearInterval(pollInterval);
+    if (wrapper._stopped) wrapper._stopped();
+    removeTypingIndicator(wrapper);
+
+    if (messageId) {
+        try {
+            const res = await fetch(`/api/message/${messageId}/stop`, { method: 'POST' });
+            const data = await res.json();
+            console.log('[STOP] server response:', data);
+        } catch(e) { 
+            console.error('[STOP] request failed:', e); 
+        }
+    }
+    appendMessageBubble('assistant', '⏹ Generation stopped by user.');
+}
+
+// ── SETTINGS MODAL ───────────────────────────
+function openSettingsModal() {
+    document.getElementById('settings-modal-backdrop').classList.add('open');
+    loadActiveInstruction();
+    loadInstructionsList();
+}
+function closeSettingsModal() {
+    document.getElementById('settings-modal-backdrop').classList.remove('open');
+    currentEditingInstructionId = null;
+}
+function switchSettingsTab(tab, btn) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`settings-tab-${tab}`).classList.add('active');
+}
+async function loadActiveInstruction() {
+    const res = await fetch('/api/instructions/active');
+    const data = await res.json();
+    document.getElementById('instruction-title').value = data.title;
+    document.getElementById('instruction-content').value = data.content;
+    document.getElementById('instruction-active').checked = data.is_active;
+    currentEditingInstructionId = data.id;
+}
+async function saveInstruction() {
+    const title = document.getElementById('instruction-title').value.trim();
+    const content = document.getElementById('instruction-content').value.trim();
+    const isActive = document.getElementById('instruction-active').checked;
+    if (!title || !content) return alert('Title and content required');
+    const url = currentEditingInstructionId ? `/api/instructions/${currentEditingInstructionId}` : '/api/instructions';
+    const method = currentEditingInstructionId ? 'PUT' : 'POST';
+    await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, is_active: isActive })
+    });
+    loadInstructionsList();
+}
+async function resetToDefault() {
+    if (!confirm('Reset to default?')) return;
+    await fetch('/api/instructions/initialize-default', { method: 'POST' });
+    loadActiveInstruction();
+}
+async function loadInstructionsList() {
+    const res = await fetch('/api/instructions');
+    const instructions = await res.json();
+    const listContainer = document.getElementById('instructions-list');
+    listContainer.innerHTML = instructions.map(inst => `
+        <div class="settings-list-item ${inst.is_active ? 'active' : ''}">
+            <div class="settings-list-item-header">
+                <span class="settings-list-item-title">${escapeHtml(inst.title)}</span>
+                ${inst.is_active ? '<span class="settings-list-item-badge">Active</span>' : ''}
+            </div>
+            <div class="settings-list-item-preview">${escapeHtml(inst.content.substring(0, 100))}...</div>
+            <div class="settings-list-item-actions">
+                <button class="settings-list-item-btn edit" onclick="editInstruction(${inst.id})"><i class="fas fa-edit"></i> Edit</button>
+                ${!inst.is_active ? `<button class="settings-list-item-btn activate" onclick="activateInstruction(${inst.id})"><i class="fas fa-check"></i> Activate</button>` : ''}
+                <button class="settings-list-item-btn delete" onclick="deleteInstruction(${inst.id})"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        </div>`).join('');
+}
+async function editInstruction(id) {
+    const res = await fetch(`/api/instructions/${id}`);
+    const data = await res.json();
+    document.getElementById('instruction-title').value = data.title;
+    document.getElementById('instruction-content').value = data.content;
+    document.getElementById('instruction-active').checked = data.is_active;
+    currentEditingInstructionId = id;
+    document.querySelectorAll('.settings-tab')[0].click();
+}
+async function activateInstruction(id) {
+    await fetch(`/api/instructions/${id}/activate`, { method: 'POST' });
+    loadInstructionsList();
+    loadActiveInstruction();
+}
+async function deleteInstruction(id) {
+    if (!confirm('Delete?')) return;
+    await fetch(`/api/instructions/${id}`, { method: 'DELETE' });
+    loadInstructionsList();
+}
+function createNewInstruction() {
+    currentEditingInstructionId = null;
+    document.getElementById('instruction-title').value = '';
+    document.getElementById('instruction-content').value = '';
+    document.getElementById('instruction-active').checked = false;
+    document.querySelectorAll('.settings-tab')[0].click();
+}
+document.getElementById('settings-modal-backdrop').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSettingsModal();
+});
+
+// ── Mobile Sidebar ─────────────────────────
+function toggleMobileSidebar() {
+    document.querySelector('aside').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+
+// ── Show More ──────────────────────────────
 function toggleShowMore(btn) {
-    console.log('[SHOW MORE] Button clicked');
-    
-    // پیدا کردن msg-wrapper و سپس msg-bubble-user داخل آن
-    const wrapper = btn.closest('.msg-wrapper');
-    if (!wrapper) {
-        console.error('[SHOW MORE] Wrapper not found!');
-        return;
-    }
-    
-    const bubble = wrapper.querySelector('.msg-bubble-user');
-    if (!bubble) {
-        console.error('[SHOW MORE] Bubble not found!');
-        return;
-    }
-    
-    const isCollapsed = bubble.classList.contains('collapsed');
-    console.log('[SHOW MORE] isCollapsed:', isCollapsed);
-    
-    if (isCollapsed) {
+    const bubble = btn.closest('.msg-wrapper').querySelector('.msg-bubble-user');
+    if (bubble.classList.contains('collapsed')) {
         bubble.classList.remove('collapsed');
         btn.innerHTML = '<i class="fas fa-chevron-up" style="font-size:8px"></i> Show Less';
-        console.log('[SHOW MORE] Expanded!');
     } else {
         bubble.classList.add('collapsed');
         btn.innerHTML = '<i class="fas fa-chevron-down" style="font-size:8px"></i> Show More';
-        console.log('[SHOW MORE] Collapsed!');
     }
 }
+
 // ── File Upload ─────────────────────────────
 async function uploadFile(input) {
     const file = input.files[0];
     if (!file) return;
-    
-    console.log('[UPLOAD] Starting upload:', file.name, 'Size:', file.size, 'Type:', file.type);
-    
-    // Show loading
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner" style="animation:spin 0.8s linear infinite;font-size:12px"></i>';
-    
-    // Show loading in textarea
     const promptInput = document.getElementById('prompt-input');
-    const originalPlaceholder = promptInput.placeholder;
-    promptInput.placeholder = '📄 Extracting text from file...';
+    const origPlaceholder = promptInput.placeholder;
+    promptInput.placeholder = 'Extracting...';
     promptInput.disabled = true;
-    
     try {
         const formData = new FormData();
         formData.append('file', file);
-        
-        console.log('[UPLOAD] Sending request to /api/upload');
-        
-        const res = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        console.log('[UPLOAD] Response status:', res.status);
-        
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
-            console.error('[UPLOAD] Server error:', errorData);
-            alert('Failed to upload file: ' + (errorData.detail || 'Unknown error'));
-            return;
-        }
-        
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
-        console.log('[UPLOAD] Success:', data.filename, 'Chars:', data.chars);
-        
-        // Add file content to prompt
-        const fileInfo = `\n\n--- 📄 File: ${data.filename} (${data.chars} chars) ---\n${data.text}\n--- End of file ---\n`;
+        const fileInfo = `\n\n--- File: ${data.filename} (${data.chars} chars) ---\n${data.text}\n--- End of file ---\n`;
         promptInput.value = (promptInput.value + fileInfo).trim();
         promptInput.style.height = 'auto';
         promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
         updateCharCounter();
-        
-        // Show success message
         showUploadSuccess(data.filename, data.chars);
-        
     } catch (err) {
-        console.error('[UPLOAD] Error:', err);
-        alert('Failed to upload file: ' + err.message);
+        alert('Upload error: ' + err.message);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
-        promptInput.placeholder = originalPlaceholder;
+        promptInput.placeholder = origPlaceholder;
         promptInput.disabled = false;
-        input.value = ''; // Reset input
+        input.value = '';
     }
 }
-
 function showUploadSuccess(filename, chars) {
-    // Create toast notification
     const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 70px;
-        right: 20px;
-        background: var(--green);
-        color: #fff;
-        padding: 12px 20px;
-        border-radius: 10px;
-        font-family: var(--font-ui);
-        font-size: 13px;
-        font-weight: 600;
-        z-index: 1000;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        animation: slideIn 0.3s ease;
-    `;
+    toast.style.cssText = 'position:fixed;top:70px;right:20px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-family:var(--font-ui);font-size:13px;font-weight:600;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;animation:slideIn 0.3s ease';
     toast.innerHTML = `<i class="fas fa-check-circle"></i> ✅ ${filename} uploaded (${chars} chars)`;
     document.body.appendChild(toast);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    setTimeout(() => { toast.style.animation = 'slideOut 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
-
-// Add animation keyframes
 const uploadStyle = document.createElement('style');
-uploadStyle.textContent = `
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateX(100px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes slideOut {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100px); }
-    }
-`;
+uploadStyle.textContent = '@keyframes slideIn {from{opacity:0;transform:translateX(100px)}to{opacity:1;transform:translateX(0)}}@keyframes slideOut {from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(100px)}}';
 document.head.appendChild(uploadStyle);
-
-
     </script>
 </body>
 </html>
