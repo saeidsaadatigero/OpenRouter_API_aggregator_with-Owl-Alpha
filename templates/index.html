@@ -1729,6 +1729,18 @@
     }
 }
 
+#compress-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#compress-modal-backdrop.open { display: flex; }
+
     </style>
 </head>
 <body>
@@ -1802,31 +1814,42 @@
                 <span class="header-session-id">SID:{{ active_session_id }}</span>
                 {% endif %}
             </div>
-            <div class="header-right">
-                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-                    <i class="fas fa-moon" id="theme-icon"></i>
-                </button>
-                <button class="theme-toggle" onclick="openSettingsModal()" title="System Instructions">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <div style="position:relative;">
-                    <button class="theme-toggle" onclick="toggleExportMenu()" title="Export Chat">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <div id="export-menu" class="export-menu">
-                        <button class="export-item" onclick="exportChat('json')">
-                            <i class="fas fa-file-code" style="color:var(--cyan)"></i> Export as JSON
-                        </button>
-                        <button class="export-item" onclick="exportChat('markdown')">
-                            <i class="fas fa-file-alt" style="color:var(--green)"></i> Export as Markdown
-                        </button>
-                        <button class="export-item" onclick="exportChat('txt')">
-                            <i class="fas fa-file" style="color:var(--yellow)"></i> Export as Text
-                        </button>
-                    </div>
-                </div>
-                <span class="model-badge">Owl-Alpha/ Chat</span>
-            </div>
+<div class="header-right">
+    <!-- 🌙 دکمه شب/روز -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+        <i class="fas fa-moon" id="theme-icon"></i>
+    </button>
+    
+    <!-- ⚙️ دکمه Settings -->
+    <button class="theme-toggle" onclick="openSettingsModal()" title="System Instructions">
+        <i class="fas fa-cog"></i>
+    </button>
+    
+    <!-- 📦 Export -->
+    <div style="position:relative;">
+        <button class="theme-toggle" onclick="toggleExportMenu()" title="Export Chat">
+            <i class="fas fa-download"></i>
+        </button>
+        <div id="export-menu" class="export-menu">
+            <button class="export-item" onclick="exportChat('json')">
+                <i class="fas fa-file-code" style="color:var(--cyan)"></i> Export as JSON
+            </button>
+            <button class="export-item" onclick="exportChat('markdown')">
+                <i class="fas fa-file-alt" style="color:var(--green)"></i> Export as Markdown
+            </button>
+            <button class="export-item" onclick="exportChat('txt')">
+                <i class="fas fa-file" style="color:var(--yellow)"></i> Export as Text
+            </button>
+        </div>
+    </div>
+
+    <!-- 🗜️ Compress -->
+    <button class="theme-toggle" onclick="openCompressModal()" title="Compress History">
+        <i class="fas fa-compress-alt" style="color:var(--yellow)"></i>
+    </button>
+    
+    <span class="model-badge">Owl-Alpha/ Chat</span>
+</div>
         </header>
 
         <div id="chat-messages">
@@ -2772,6 +2795,116 @@ function showUploadSuccess(filename, chars) {
 const uploadStyle = document.createElement('style');
 uploadStyle.textContent = '@keyframes slideIn {from{opacity:0;transform:translateX(100px)}to{opacity:1;transform:translateX(0)}}@keyframes slideOut {from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(100px)}}';
 document.head.appendChild(uploadStyle);
+
+function openCompressModal() {
+    if (!activeSessionId) {
+        alert('No active session!');
+        return;
+    }
+    document.getElementById('compress-modal-backdrop').classList.add('open');
+    document.getElementById('compress-stats').style.display = 'none';
+    document.getElementById('compress-execute-btn').disabled = false;
+    document.getElementById('compress-execute-btn').innerHTML = '<i class="fas fa-compress-alt"></i> Compress';
+}
+
+function closeCompressModal() {
+    document.getElementById('compress-modal-backdrop').classList.remove('open');
+}
+
+async function executeCompress() {
+    const btn = document.getElementById('compress-execute-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compressing...';
+    
+    try {
+        const res = await fetch(`/api/chat/${activeSessionId}/compress`, { method: 'POST' });
+        
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+            throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        // نشون دادن آمار
+        document.getElementById('stat-before').textContent = data.before_tokens.toLocaleString() + ' tokens';
+        document.getElementById('stat-after').textContent = data.after_tokens.toLocaleString() + ' tokens';
+        document.getElementById('stat-saved').textContent = data.saved_tokens.toLocaleString() + ' tokens';
+        document.getElementById('compress-stats').style.display = 'block';
+        
+        // تغییر دکمه
+        btn.innerHTML = '<i class="fas fa-check"></i> Done!';
+        btn.style.background = 'linear-gradient(135deg, var(--green), #28a745)';
+        
+        // رفرش بعد از ۱.۵ ثانیه
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+        
+    } catch(e) {
+        console.error('[COMPRESS]', e);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-compress-alt"></i> Compress';
+        alert('❌ Failed: ' + e.message);
+    }
+}
+
+// بستن مودال با کلیک بیرون
+document.getElementById('compress-modal-backdrop').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeCompressModal();
+});
     </script>
+
+
+<!-- ── COMPRESS MODAL ───────────────────────── -->
+<div id="compress-modal-backdrop">
+    <div class="modal-surface" style="max-width:450px">
+        <div style="text-align:center;margin-bottom:20px">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(245,197,66,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+                <i class="fas fa-compress-alt" style="font-size:22px;color:var(--yellow)"></i>
+            </div>
+            <p class="modal-title" style="margin-bottom:4px">Compress Chat History</p>
+            <p style="font-size:12px;color:var(--text-muted);margin:0">Free up context space to continue chatting</p>
+        </div>
+        
+        <div style="background:var(--bg-surface);border-radius:10px;padding:14px;margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <i class="fas fa-check-circle" style="color:var(--green);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-primary)">All code blocks preserved</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <i class="fas fa-check-circle" style="color:var(--green);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-primary)">Key context maintained</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <i class="fas fa-exclamation-triangle" style="color:var(--yellow);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-muted)">Long explanations trimmed</span>
+            </div>
+        </div>
+        
+        <div id="compress-stats" style="display:none;background:var(--bg-surface);border-radius:10px;padding:14px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px">
+                <span>Before</span>
+                <span id="stat-before">-</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px">
+                <span>After</span>
+                <span id="stat-after">-</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600">
+                <span style="color:var(--green)">Saved</span>
+                <span id="stat-saved" style="color:var(--green)">-</span>
+            </div>
+        </div>
+        
+        <div class="modal-actions">
+            <button onclick="closeCompressModal()" class="modal-btn-cancel">Cancel</button>
+            <button id="compress-execute-btn" onclick="executeCompress()" class="modal-btn-save" style="background:linear-gradient(135deg,var(--yellow),#e0a800)">
+                <i class="fas fa-compress-alt"></i> Compress
+            </button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
