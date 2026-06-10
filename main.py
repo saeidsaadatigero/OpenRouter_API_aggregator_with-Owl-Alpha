@@ -286,16 +286,22 @@ async def api_sync_to_sqlite():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# main.py
+
 @app.get("/api/db-status")
 async def db_status():
     """Get database status."""
-    from sqlalchemy import text
+    from sqlalchemy import create_engine, text  # ✨ اضافه شد
+    from decouple import config
     
     sqlite_count = 0
     pg_count = 0
     
     try:
-        sqlite_engine = create_engine(f"sqlite:///{config('SQLITE_PATH', default='./openrouter_studio.db')}", connect_args={"check_same_thread": False})
+        sqlite_engine = create_engine(
+            f"sqlite:///{config('SQLITE_PATH', default='./openrouter_studio.db')}",
+            connect_args={"check_same_thread": False}
+        )
         with sqlite_engine.connect() as conn:
             result = conn.execute(text("SELECT COUNT(*) FROM chat_sessions"))
             sqlite_count = result.scalar()
@@ -318,6 +324,7 @@ async def db_status():
         "sqlite_sessions": sqlite_count,
         "postgres_sessions": pg_count
     }
+
 
 @app.post("/api/chat/{session_id}/compress")
 async def compress_chat_history(session_id: int, db: Session = Depends(get_db)):
@@ -528,6 +535,9 @@ async def handle_chat_send(
 
         chat_manager.update_session_title_fallback(session_id, payload.prompt)
     chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt, status="done")
+
+    # # ✨ اضافه کن: فشرده‌سازی قبل از ارسال به LLM
+    # chat_manager.compress_history_for_context(session_id, max_tokens=800000)
 
     system_instruction = get_active_instruction_content(db)
     history = chat_manager.get_session_messages(session_id)
