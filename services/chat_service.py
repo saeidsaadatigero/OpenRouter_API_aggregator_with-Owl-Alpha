@@ -94,3 +94,57 @@ class ChatService:
             msg.content = content
             msg.status = status
             self.db.commit()
+
+    def aggressive_compress(self, session_id: int) -> int:
+        """
+        فشرده‌سازی تهاجمی: 
+        - فقط کدها و ۱۰۰ کاراکتر اول/آخر هر پیام رو نگه می‌داره
+        - همه پیام‌ها رو حذف می‌کنه و یه پیام system می‌سازه
+        - برمی‌گردونه: تعداد کاراکترهای پیام جدید
+        """
+        import re
+        
+        messages = self.get_session_messages(session_id)
+        
+        if len(messages) == 0:
+            return 0
+        
+        logger.info(f"[AGGRESSIVE-COMPRESS] session_id={session_id} messages={len(messages)}")
+        
+        parts = []
+        
+        for msg in messages:
+            content = msg.content or ''
+            role = msg.role
+            
+            # استخراج همه کدها
+            codes = re.findall(r'```[\s\S]*?```', content)
+            
+            if codes:
+                # فقط کدها رو نگه دار + ۱۰۰ کاراکتر اول
+                text_no_code = re.sub(r'```[\s\S]*?```', '', content).strip()
+                short_text = text_no_code[:100] if text_no_code else ""
+                parts.append(f"[{role}] {short_text}\n" + "\n".join(codes))
+            else:
+                # پیام بدون کد: فقط ۱۵۰ کاراکتر
+                short = content[:150].replace('\n', ' ')
+                parts.append(f"[{role}] {short}...")
+        
+        compressed = "📦 **COMPRESSED (codes kept, text trimmed):**\n\n" + "\n\n---\n\n".join(parts)
+        
+        # حذف همه پیام‌ها
+        for msg in messages:
+            self.db.delete(msg)
+        
+        # اضافه کردن پیام فشرده
+        new_msg = models.ChatMessage(
+            session_id=session_id,
+            role="system",
+            content=compressed,
+            status="done"
+        )
+        self.db.add(new_msg)
+        self.db.commit()
+        
+        logger.info(f"[AGGRESSIVE-COMPRESS] Done: {len(messages)} msgs → {len(compressed)} chars")
+        return len(compressed)
