@@ -319,7 +319,27 @@ async def db_status():
         "postgres_sessions": pg_count
     }
 
-
+@app.post("/api/chat/{session_id}/compress")
+async def compress_chat_history(session_id: int, db: Session = Depends(get_db)):
+    """فشرده‌سازی تهاجمی تاریخچه برای آزاد کردن context"""
+    chat_manager = ChatService(db)
+    
+    # قبل از فشرده‌سازی، وضعیت رو بگو
+    messages = chat_manager.get_session_messages(session_id)
+    total_chars = sum(len(m.content or '') for m in messages)
+    estimated_tokens = total_chars // 4
+    
+    # فشرده‌سازی
+    new_chars = chat_manager.aggressive_compress(session_id)
+    new_tokens = new_chars // 4
+    
+    return {
+        "status": "success",
+        "message": f"Compressed {len(messages)} messages",
+        "before_tokens": estimated_tokens,
+        "after_tokens": new_tokens,
+        "saved_tokens": estimated_tokens - new_tokens
+    }
 # ── Pages ───────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def index_view(request: Request, db: Session = Depends(get_db)):
@@ -503,7 +523,10 @@ async def handle_chat_send(
         chat_manager.update_message_content(pm.id, "⏹ Cancelled (new request)", status="cancelled")
         logger.info(f"[SEND-CLEANUP] Cancelled pending message {pm.id}")
     
-    chat_manager.update_session_title_fallback(session_id, payload.prompt)
+            # فشرده‌سازی هوشمند قبل از ارسال (اگه لازم باشه)
+        chat_manager.compress_history_for_context(session_id, max_tokens=800000)
+
+        chat_manager.update_session_title_fallback(session_id, payload.prompt)
     chat_manager.add_message(session_id=session_id, role="user", content=payload.prompt, status="done")
 
     system_instruction = get_active_instruction_content(db)
