@@ -1,9 +1,11 @@
 # services/chat_service.py
+
 import logging
+import re
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
+from datetime import datetime
 import models
-import schemas
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,8 @@ class ChatService:
         
         session_record = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
         if session_record:
-            session_record.updated_at = models.datetime.utcnow()
+            from datetime import datetime
+            session_record.updated_at = datetime.utcnow()
             
         self.db.commit()
         self.db.refresh(message_record)
@@ -53,12 +56,6 @@ class ChatService:
             computed_title = initial_prompt[:40] + "..." if len(initial_prompt) > 40 else initial_prompt
             session_record.title = computed_title
             self.db.commit()
-
-    def compile_openrouter_payload(self, session_messages: List[models.ChatMessage]) -> List[Dict[str, str]]:
-        payload = []
-        for msg in session_messages:
-            payload.append({"role": msg.role, "content": msg.content})
-        return payload
 
     def rename_session(self, session_id: int, new_title: str) -> bool:
         session = self.db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
@@ -94,3 +91,102 @@ class ChatService:
             msg.content = content
             msg.status = status
             self.db.commit()
+
+    # ═══════════════════════════════════════════════════════
+    # ── History Compression ─────────────────────────────
+    # ═══════════════════════════════════════════════════════
+
+    def compress_history_for_context(self, session_id: int, max_tokens: int = 800000) -> None:
+        """
+        Smart compression: trim old messages if total tokens exceed max_tokens.
+        Keeps recent messages intact, trims older long responses.
+        """
+        messages = self.get_session_messages(session_id)
+        
+        if not messages:
+            return
+        
+        total_chars = sum(len(m.content or "") for m in messages)
+        total_tokens = total_chars // 4
+        
+        if total_tokens <= max_tokens:
+            logger.info(f"[COMPRESS] Session {session_id}: {total_tokens} tokens (no compression needed)")
+            return
+        
+        logger.info(f"[COMPRESS] Session {session_id}: {total_tokens} tokens > {max_tokens} limit, compressing...")
+        
+        # Keep last 10 messages intact, compress older ones
+        KEEP_LAST = 10
+        
+        if len(messages) <= KEEP_LAST:
+            return
+        
+        messages_to_compress = messages[:-KEEP_LAST]
+        compressed_count = 0
+        
+        for msg in messages_to_compress:
+            if msg.role == "assistant" and msg.content and len(msg.content) > 500:
+                original_len = len(msg.content)
+                # Keep first 200 chars + last 100 chars
+                msg.content = msg.content[:200] + "\n\n[... trimmed for context ...]\n\n" + msg.content[-100:]
+                compressed_count += 1
+        
+        self.db.commit()
+        
+        new_total = sum(len(m.content or "") for m in self.get_session_messages(session_id))
+        new_tokens = new_total // 4
+        
+        logger.info(f"[COMPRESS] Compressed {compressed_count} messages. Tokens: {total_tokens} -> {new_tokens}")
+
+    def aggressive_compress(self, session_id: int) -> int:
+        """
+        Aggressive compression:
+        - Keep all code blocks intact
+        - Keep first 100 chars + last 50 chars of each message
+        - Delete all old messages, create one summary message
+        - Returns: new total character count
+        """
+        messages = self.get_session_messages(session_id)
+        
+        if len(messages) == 0:
+            return 0
+        
+        logger.info(f"[AGGRESSIVE-COMPRESS] session_id={session_id} messages={len(messages)}")
+        
+        parts = []
+        
+        for msg in messages:
+            content = msg.content or ''
+            role = msg.role
+            
+            # Extract all code blocks
+            codes = re.findall(r'```[\s\S]*?```', content)
+            
+            if codes:
+                # Keep codes + first 100 chars of text
+                text_no_code = re.sub(r'```[\s\S]*?```', '', content).strip()
+                short_text = text_no_code[:100] if text_no_code else ""
+                parts.append(f"[{role}] {short_text}\n" + "\n".join(codes))
+            else:
+                # No code: keep first 150 chars
+                short = content[:150].replace('\n', ' ')
+                parts.append(f"[{role}] {short}...")
+        
+        compressed = "📦 **COMPRESSED (codes kept, text trimmed):**\n\n" + "\n\n---\n\n".join(parts)
+        
+        # Delete all old messages
+        for msg in messages:
+            self.db.delete(msg)
+        
+        # Add compressed summary as assistant message (not system)
+        new_msg = models.ChatMessage(
+            session_id=session_id,
+            role="assistant",  # Changed from "system" to "assistant"
+            content=compressed,
+            status="done"
+        )
+        self.db.add(new_msg)
+        self.db.commit()
+        
+        logger.info(f"[AGGRESSIVE-COMPRESS] Done: {len(messages)} msgs → {len(compressed)} chars")
+        return len(compressed)

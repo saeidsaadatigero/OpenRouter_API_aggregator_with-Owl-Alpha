@@ -1,35 +1,37 @@
-
-<img width="1919" height="908" alt="image" src="https://github.com/user-attachments/assets/a86e3849-7ff1-4cbc-9d45-ce9597ac4206" />
-
 <div align="center">
 
-# 🌌 Agentic Code Studio
-### *Next-Gen Asynchronous Enterprise Code Generation Engine*
+# 🌌 OWL Studio — Intelligence Terminal
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.136.3-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.50-C11921?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
-[![Uvicorn](https://img.shields.io/badge/Uvicorn-0.48.0-494949?style=for-the-badge&logo=gunicorn&logoColor=white)](https://www.uvicorn.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge&logo=openai&logoColor=white)](https://openrouter.ai)
+### *Next-Gen AI Chat & Code Generation Platform*
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688?style=for-the-badge\&logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.35-C11921?style=for-the-badge\&logo=python\&logoColor=white)](https://www.sqlalchemy.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.2-336791?style=for-the-badge\&logo=postgresql\&logoColor=white)](https://www.postgresql.org)
+[![SQLite](https://img.shields.io/badge/SQLite-3.49-003B57?style=for-the-badge\&logo=sqlite\&logoColor=white)](https://www.sqlite.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge\&logo=tailwind-css\&logoColor=white)](https://tailwindcss.com)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge\&logo=openai\&logoColor=white)](https://openrouter.ai)
 
 <p align="center">
-  A high-performance, asynchronous AI code generation studio powered by OpenRouter (Owl Alpha). 
-  Features real-time Server-Sent Events streaming, robust security sandboxing, intelligent circuit breaking, 
-  and persistent audit logging.
+A high-performance AI chat and code generation studio with dual-database support, real-time SSE streaming, auto-sync migration, and intelligent document text extraction.
 </p>
 
 [✨ Core Features](#-core-features) • [🏗️ Architecture](#️-architecture-blueprint) • [🚀 Quickstart](#-quickstart-pipeline) • [📁 Directory Structure](#-system-directory-layout)
 
----
 </div>
+
+---
 
 ## ✨ Core Features
 
-- **⚡ Real-Time SSE Token Streaming**: Asynchronous streaming from OpenRouter directly to the browser with zero blocking.
-- **🛡️ Secure Workspace Sandboxing**: Strong protection against path traversal attacks (`..`, `/`, `~`) with strict base directory enforcement.
-- **🔌 Intelligent Circuit Breaking**: Automatically cancels generation if the client disconnects to prevent unnecessary token usage.
-- **📊 Relational Audit Trail**: Full history of prompts and generated code stored persistently using SQLAlchemy + SQLite.
-- **🎨 Cyberpunk Dark UI**: Modern, high-contrast interface with live character counting, dynamic line counters, and instant copy functionality.
+* 💬 Persistent Chat Sessions with create, rename, and delete functionality
+* ⚡ Real-Time SSE Token Streaming from OpenRouter
+* 🔄 Dual Database Support (SQLite / PostgreSQL)
+* 🔁 Auto-Sync Migration between databases
+* 📄 Smart PDF/DOCX/TXT Extraction with RTL support
+* 🛡️ Secure Workspace Sandboxing
+* 🔌 Intelligent Circuit Breaking
+* 📝 Multiple System Instruction Profiles
+* 🎨 Cyberpunk Dark UI with live indicators
 
 ---
 
@@ -37,113 +39,320 @@
 
 ```mermaid
 graph TD
-    Client[🎨 Client Browser] -->|POST Request| FastAPI[🛡️ FastAPI /main.py]
-    FastAPI -->|Validation & Sanitization| Service[⚙️ OpenRouter Service]
-    Service -->|Async Streaming| OpenRouter[🧠 OpenRouter Owl Alpha]
+    Client[🎨 Browser Client] -->|POST Request| FastAPI[🛡️ FastAPI]
+    FastAPI -->|Validation| Service[⚙️ OpenRouter Service]
+
+    Service -->|Async Streaming| OpenRouter[🧠 OpenRouter]
     OpenRouter -->|Token Chunks| Service
-    Service -->|SSE Yield| Client
-    Service -->|Save Record| Database[(💾 SQLite Database)]
-    Service -->|Write Files| Sandbox[📂 generated_components/ Sandbox]
+
+    Service -->|SSE Stream| Client
+    Service -->|CRUD| DB[(💾 Database)]
+
+    subgraph Database Layer
+        DB --> SQLite[(SQLite)]
+        DB --> PostgreSQL[(PostgreSQL)]
+    end
+
+    Service -->|Generate Files| Sandbox[📂 generated_components]
+
+    style SQLite fill:#003B57,color:#fff
+    style PostgreSQL fill:#336791,color:#fff
 ```
 
 ---
-<img width="1401" height="902" alt="image" src="https://github.com/user-attachments/assets/0fec69e0-b62e-4cdd-bae4-1ab8b855b47a" />
 
 ## 🛠️ Technical Stack
 
-| Layer                    | Technology                        | Role |
-|-------------------------|-----------------------------------|------|
-| **Async Web Framework** | FastAPI + Uvicorn                 | High-performance API and SSE streaming |
-| **LLM Client**          | AsyncOpenAI                       | Optimized connection to OpenRouter |
-| **Database**            | SQLAlchemy 2.0 + SQLite           | Persistent generation history |
-| **Frontend**            | Jinja2 + Tailwind CSS             | Dynamic dark cyberpunk interface |
-| **Configuration**       | Python Decouple                   | Secure environment management |
+| Layer           | Technology                     | Role                   |
+| --------------- | ------------------------------ | ---------------------- |
+| Async Framework | FastAPI + Uvicorn              | API & SSE Streaming    |
+| LLM Client      | AsyncOpenAI                    | OpenRouter integration |
+| Database        | SQLAlchemy + SQLite/PostgreSQL | Dual DB support        |
+| Frontend        | Jinja2 + Tailwind CSS          | Dynamic UI             |
+| File Processing | pdfplumber, python-docx, pptx  | Text extraction        |
+| Configuration   | Python Decouple                | Environment management |
 
 ---
 
-# 📥 Download and Install Prerequisites
+## 📥 Download & Install Prerequisites
 
-Open your browser and download and install the following programs:
+Install the following:
 
-1. **[Python 3.12.10 (Stable)](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe)**: Download the `Windows installer (64-bit)` file directly (this is the latest official binary version of Python 3.12). ⚠️ **Very Important:** On the first installation screen, be sure to check **"Add Python.exe to PATH"** and then click Install Now.
+* Python 3.12+
+* Git for Windows
+* PostgreSQL 17 (Optional)
 
-2. **[Git for Windows](https://github.com/git-for-windows/git/releases/download/v2.45.0.windows.1/Git-2.45.0-64-bit.exe)**: Run the file and simply click `Next` until the end (default settings are excellent).
+Important during Python installation:
+
+* Enable:
+
+```plaintext
+Add Python.exe to PATH
+```
+
+---
 
 ## 🚀 Quickstart Pipeline
 
-### 1. Clone & Setup Environment
+### 1. Clone Repository & Create Environment
+
 ```bash
 git clone https://github.com/saeidsaadatigero/OpenRouter_API_aggregator_with-Owl-Alpha.git
+
 cd OpenRouter_API_aggregator_with-Owl-Alpha
 
 python -m venv venv
+```
 
-# Windows
+Windows PowerShell:
+
+```bash
 .\venv\Scripts\Activate.ps1
+```
 
-# Linux / macOS
+Linux/macOS:
+
+```bash
 source venv/bin/activate
 ```
 
+---
+
 ### 2. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure API & Environment Variables
-**[Make OPENROUTER_API_KEY](https://openrouter.ai/)**
+---
 
-Create `.env` file in the project root:
+### 3. Configure Environment Variables
+
+Create `.env`
+
 ```env
-OPENROUTER_API_KEY=sk-or-XXXXXXXXXXXXXXXXXXXXXXXX
-MAX_PROMPT_LENGTH=100000
-MAX_CONTEXT_TOKENS=100000
+# Database Engine
+DB_ENGINE=sqlite
+
+# SQLite
+SQLITE_PATH=./openrouter_studio.db
+
+# PostgreSQL
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=owl_user
+POSTGRES_PASSWORD=123456
+POSTGRES_DB=owl
+
+# OpenRouter
+OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxxxxxx
+MAX_PROMPT_LENGTH=200000
+MAX_CHARS=200000
 ```
 
-### 4. Run the Server
+---
+
+### 4. Run Server
+
 ```bash
 python -m uvicorn main:app --reload
 ```
 
-Open your browser and go to: **`http://127.0.0.1:8000`**
+Open:
+
+```plaintext
+http://127.0.0.1:8000
+```
+
+---
+
+## 🔄 Database Migration & Auto Switch
+
+Switch to PostgreSQL:
+
+```env
+DB_ENGINE=postgres
+```
+
+```bash
+python -m uvicorn main:app --reload
+```
+
+Switch back:
+
+```env
+DB_ENGINE=sqlite
+```
+
+```bash
+python -m uvicorn main:app --reload
+```
+
+---
+
+### Manual Migration Commands
+
+```bash
+python migrate.py check
+
+python migrate.py sqlite-to-postgres
+
+python migrate.py postgres-to-sqlite
+```
+
+---
+
+### Database API Endpoints
+
+```bash
+curl http://localhost:8000/api/db-status
+
+curl -X POST http://localhost:8000/api/sync-to-postgres
+
+curl -X POST http://localhost:8000/api/sync-to-sqlite
+```
 
 ---
 
 ## 📁 System Directory Layout
 
-```text
+```plaintext
 .
-├── 📂 generated_components/          # Sandbox for generated code outputs
-├── 📂 services/
-│   └── 📄 openrouter_service.py      # Core OpenRouter orchestration logic
-├── 📂 static/
-│   └── 📂 css/
-│       └── 📄 style.css              # Custom styles & dark theme
-├── 📂 templates/
-│   └── 📄 index.html                 # Jinja2 main template
-├── 📄 database.py                    # SQLAlchemy setup & sessions
-├── 📄 models.py                      # Database models
-├── 📄 schemas.py                     # Pydantic validation schemas
-├── 📄 main.py                        # FastAPI application entrypoint
-├── 📄 .env                           # Environment variables
-└── 📄 openrouter_studio.db           # SQLite database file
+├── generated_components/
+├── services/
+│   ├── openrouter_service.py
+│   ├── chat_service.py
+│   ├── instruction_service.py
+│   └── file_service.py
+│
+├── static/
+│   └── css/
+│       └── style.css
+│
+├── templates/
+│   └── index.html
+│
+├── database.py
+├── models.py
+├── schemas.py
+├── migrate.py
+├── main.py
+├── .env
+├── openrouter_studio.db
+└── requirements.txt
 ```
 
 ---
 
-## 🛡️ Sandbox Security Architecture
+## 🗄️ Database Schema
 
-> [!IMPORTANT]
-> All file paths are strictly validated using `Path.resolve()` to prevent directory traversal:
-> 
-> ```python
-> safe_path = (TARGET_BASE_DIR / filename).resolve()
-> if not str(safe_path).startswith(str(TARGET_BASE_DIR)):
->     raise HTTPException(status_code=400, detail="Security sandbox violation.")
-> ```
+### Chat Sessions
+
+| Column     | Type     | Description   |
+| ---------- | -------- | ------------- |
+| id         | Integer  | Session ID    |
+| title      | String   | Session title |
+| created_at | DateTime | Creation date |
+| updated_at | DateTime | Update date   |
+
+### Chat Messages
+
+| Column     | Type     | Description        |
+| ---------- | -------- | ------------------ |
+| id         | Integer  | Message ID         |
+| session_id | Integer  | Session reference  |
+| role       | String   | User or assistant  |
+| content    | Text     | Message content    |
+| status     | String   | pending/done/error |
+| created_at | DateTime | Creation date      |
+
+### System Instructions
+
+| Column    | Type    | Description    |
+| --------- | ------- | -------------- |
+| id        | Integer | Instruction ID |
+| title     | String  | Name           |
+| content   | Text    | Full content   |
+| is_active | Boolean | Active state   |
 
 ---
 
-**Built with ❤️ for high-performance AI code generation**
+## 🛡️ Security Features
 
-*Star the repository if you like the project! ⭐*
+### Path Traversal Protection
+
+```python
+safe_path = (TARGET_BASE_DIR / filename).resolve()
+
+if not str(safe_path).startswith(str(TARGET_BASE_DIR)):
+    raise HTTPException(
+        status_code=400,
+        detail="Security sandbox violation."
+    )
+```
+
+### Input Validation
+
+* File extension whitelist
+* Max file size limit (50MB)
+* Prompt length limit
+
+### Database Security
+
+* SQLAlchemy parameterized queries
+* Foreign key constraints
+* No raw SQL
+
+---
+
+## 🌐 API Endpoints
+
+### Chat Operations
+
+| Method | Endpoint                | Description    |
+| ------ | ----------------------- | -------------- |
+| GET    | /                       | Main page      |
+| POST   | /api/chat/new           | Create session |
+| POST   | /api/chat/{id}/rename   | Rename session |
+| POST   | /api/chat/{id}/delete   | Delete session |
+| POST   | /api/chat/{id}/send     | Send message   |
+| GET    | /api/chat/{id}/messages | Get messages   |
+
+### System Instructions
+
+| Method | Endpoint                 | Description        |
+| ------ | ------------------------ | ------------------ |
+| GET    | /api/instructions        | List instructions  |
+| GET    | /api/instructions/active | Active instruction |
+| POST   | /api/instructions        | Create instruction |
+| PUT    | /api/instructions/{id}   | Update instruction |
+| DELETE | /api/instructions/{id}   | Delete instruction |
+
+### File Operations
+
+| Method | Endpoint    | Description           |
+| ------ | ----------- | --------------------- |
+| POST   | /api/upload | Upload & extract file |
+
+---
+
+## 🎨 UI Features
+
+* 🌙 Dark / Light Mode
+* 📊 Character Counter
+* ⌨️ Typing Indicator
+* 📋 Copy Code Button
+* 🔄 Message Regeneration
+* ✏️ Inline Editing
+* 📱 Responsive Design
+* 🌐 RTL Support
+
+---
+
+<div align="center">
+
+Built with ❤️ by Saeid Saadatigero
+
+If you found this useful, consider giving the repository a ⭐
+
+</div>
