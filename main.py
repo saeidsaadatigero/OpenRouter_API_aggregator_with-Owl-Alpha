@@ -89,7 +89,7 @@ class ChatRenamePayload(BaseModel):
 
 
 class ChatSendPayload(BaseModel):
-    prompt: str = Field(..., min_length=1, max_length=100000)
+    prompt: str = Field(..., min_length=1, max_length=200000)
 
 
 class InstructionPayload(BaseModel):
