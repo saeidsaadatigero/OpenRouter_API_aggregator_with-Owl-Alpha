@@ -791,7 +791,14 @@ async def create_snapshot(session_id: int, db: Session = Depends(get_db)):
 
     # Build the full prompt
     system_prompt = snapshot_service.get_snapshot_prompt()
-    user_prompt = f"Here is the complete chat history:\n{history_text}\n\nNow write the comprehensive project snapshot."
+    user_prompt = f"""Here is our chat history. It contains conversations about the main project as well as unrelated side topics.
+
+        IMPORTANT: Only create a snapshot of the MAIN PROJECT. Ignore all unrelated conversations.
+
+        Chat history:
+        {history_text}
+
+        Now write the project snapshot."""
 
     messages_payload = [
         {"role": "system", "content": system_prompt},

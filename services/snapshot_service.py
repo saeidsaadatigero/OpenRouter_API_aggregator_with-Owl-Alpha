@@ -14,18 +14,27 @@ SNAPSHOTS_DIR = Path("snapshots").resolve()
 SNAPSHOTS_DIR.mkdir(exist_ok=True)
 
 # ── Snapshot Prompt Template ────────────────────────
-SNAPSHOT_PROMPT = """You are about to lose all chat history. Write a comprehensive project snapshot including:
+SNAPSHOT_PROMPT = """You are about to lose all chat history. Write a comprehensive project snapshot.
 
-1. **Project Overview**: What is this project? What does it do?
-2. **Current State**: Where are we right now? What's working?
-3. **Architecture**: Tech stack, folder structure, key files
-4. **Active Files**: List all important files with their purpose
+⚠️ IMPORTANT RULES:
+- ONLY include information about the MAIN PROJECT we're working on.
+- IGNORE casual conversations, personal questions, resume editing, greetings, or unrelated side topics.
+- IGNORE any code or files that are NOT part of the main project.
+- IGNORE debugging sessions, error fixes, and trial-and-error unless they resulted in a permanent architectural change.
+- FOCUS ONLY on: project purpose, architecture, current state, active files, pending tasks, and key decisions.
+
+Include these sections:
+
+1. **Project Overview**: What is the main project? What does it do? What tech stack?
+2. **Architecture**: Key modules, folder structure, important files and their purpose
+3. **Current State**: What's completed? What features are working?
+4. **Active Files**: List only the core project files with a brief description
 5. **Pending Tasks**: What needs to be done next?
-6. **Key Decisions**: Important architectural or design decisions made
-7. **Notes**: Any other critical information
+6. **Key Decisions**: Important design choices we made (only permanent ones)
+7. **Quick Reference**: Any commands, credentials structure, or patterns we use frequently
 
-Write this as a detailed technical document. This is the ONLY context you'll have when we restart.
-Use English for technical terms, Persian for explanations if needed."""
+Write as a concise technical document. Keep it clean and focused.
+Use English for technical terms."""
 
 
 class SnapshotService:
