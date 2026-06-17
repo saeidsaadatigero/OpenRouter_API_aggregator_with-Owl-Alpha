@@ -22,3 +22,4 @@ openrouter_studio.dbtest_full_flow.py
 .backup
 *.bak
 openrouter_studio.db.backup
+*.txt
