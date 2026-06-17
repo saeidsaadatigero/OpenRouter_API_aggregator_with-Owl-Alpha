@@ -4,15 +4,15 @@
 
 ### *Next-Gen AI Chat & Code Generation Platform*
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688?style=for-the-badge\&logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.35-C11921?style=for-the-badge\&logo=python\&logoColor=white)](https://www.sqlalchemy.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.2-336791?style=for-the-badge\&logo=postgresql\&logoColor=white)](https://www.postgresql.org)
-[![SQLite](https://img.shields.io/badge/SQLite-3.49-003B57?style=for-the-badge\&logo=sqlite\&logoColor=white)](https://www.sqlite.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge\&logo=tailwind-css\&logoColor=white)](https://tailwindcss.com)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge\&logo=openai\&logoColor=white)](https://openrouter.ai)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.35-C11921?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.2-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![SQLite](https://img.shields.io/badge/SQLite-3.49-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge&logo=openai&logoColor=white)](https://openrouter.ai)
 
 <p align="center">
-A high-performance AI chat and code generation studio with dual-database support, real-time SSE streaming, auto-sync migration, and intelligent document text extraction.
+A high-performance AI chat and code generation studio with dual-database support, real-time SSE streaming, context-aware snapshot system, and intelligent document text extraction.
 </p>
 
 [✨ Core Features](#-core-features) • [🏗️ Architecture](#️-architecture-blueprint) • [🚀 Quickstart](#-quickstart-pipeline) • [📁 Directory Structure](#-system-directory-layout)
@@ -23,15 +23,20 @@ A high-performance AI chat and code generation studio with dual-database support
 
 ## ✨ Core Features
 
-* 💬 Persistent Chat Sessions with create, rename, and delete functionality
-* ⚡ Real-Time SSE Token Streaming from OpenRouter
-* 🔄 Dual Database Support (SQLite / PostgreSQL)
-* 🔁 Auto-Sync Migration between databases
-* 📄 Smart PDF/DOCX/TXT Extraction with RTL support
-* 🛡️ Secure Workspace Sandboxing
-* 🔌 Intelligent Circuit Breaking
-* 📝 Multiple System Instruction Profiles
-* 🎨 Cyberpunk Dark UI with live indicators
+- 💬 Persistent Chat Sessions with create, rename, and delete functionality
+- ⚡ Real-Time Background LLM Processing with manual Stop & Retry
+- 📸 Smart Snapshot System — AI-generated project summaries with full history clear & context restore
+- 📊 Token Usage Bar with 85%/90%/95%/100% warning modals (Persian UI)
+- 🗜️ Context Compression — automatic smart trimming when approaching token limits
+- 🔄 Dual Database Support (SQLite / PostgreSQL)
+- 🔁 Auto-Sync Migration between databases
+- 📄 Smart PDF/DOCX/TXT/PPTX/XLSX Extraction with Persian RTL detection & direction fix
+- 🛡️ Secure Workspace Sandboxing with path traversal protection
+- 🔌 Intelligent Circuit Breaking & cancellation
+- 📝 Multiple System Instruction Profiles with CRUD
+- 🎨 Cyberpunk Dark/Light UI with live indicators
+- 🌐 Persian & English mixed UI
+- 📦 Export chat as JSON, Markdown, or Text
 
 ---
 
@@ -42,10 +47,10 @@ graph TD
     Client[🎨 Browser Client] -->|POST Request| FastAPI[🛡️ FastAPI]
     FastAPI -->|Validation| Service[⚙️ OpenRouter Service]
 
-    Service -->|Async Streaming| OpenRouter[🧠 OpenRouter]
-    OpenRouter -->|Token Chunks| Service
+    Service -->|Background Thread| OpenRouter[🧠 OpenRouter]
+    OpenRouter -->|Response| Service
 
-    Service -->|SSE Stream| Client
+    Service -->|Polling| Client
     Service -->|CRUD| DB[(💾 Database)]
 
     subgraph Database Layer
@@ -54,6 +59,7 @@ graph TD
     end
 
     Service -->|Generate Files| Sandbox[📂 generated_components]
+    Service -->|Snapshots| SnapDir[📸 snapshots/]
 
     style SQLite fill:#003B57,color:#fff
     style PostgreSQL fill:#336791,color:#fff
@@ -63,14 +69,15 @@ graph TD
 
 ## 🛠️ Technical Stack
 
-| Layer           | Technology                     | Role                   |
-| --------------- | ------------------------------ | ---------------------- |
-| Async Framework | FastAPI + Uvicorn              | API & SSE Streaming    |
-| LLM Client      | AsyncOpenAI                    | OpenRouter integration |
-| Database        | SQLAlchemy + SQLite/PostgreSQL | Dual DB support        |
-| Frontend        | Jinja2 + Tailwind CSS          | Dynamic UI             |
-| File Processing | pdfplumber, python-docx, pptx  | Text extraction        |
-| Configuration   | Python Decouple                | Environment management |
+| Layer              | Technology                     | Role                      |
+| ------------------ | ------------------------------ | ------------------------- |
+| Async Framework    | FastAPI + Uvicorn              | API & SSE Streaming       |
+| LLM Client         | OpenAI (Sync + Async)          | OpenRouter integration    |
+| Database           | SQLAlchemy + SQLite/PostgreSQL | Dual DB support           |
+| Frontend           | Jinja2 + Tailwind CSS          | Dynamic UI                |
+| File Processing    | pdfplumber, python-docx, pptx, openpyxl | Text extraction   |
+| Configuration      | Python Decouple                | Environment management    |
+| Background Tasks   | threading + cancellation       | Non-blocking LLM calls    |
 
 ---
 
@@ -78,13 +85,13 @@ graph TD
 
 Install the following:
 
-* Python 3.12+
-* Git for Windows
-* PostgreSQL 17 (Optional)
+- Python 3.12+
+- Git for Windows
+- PostgreSQL 17 (Optional)
 
 Important during Python installation:
 
-* Enable:
+- Enable:
 
 ```plaintext
 Add Python.exe to PATH
@@ -131,13 +138,13 @@ pip install -r requirements.txt
 Create `.env`
 
 ```env
-# Database Engine
+# Database Engine (sqlite or postgres)
 DB_ENGINE=sqlite
 
 # SQLite
 SQLITE_PATH=./openrouter_studio.db
 
-# PostgreSQL
+# PostgreSQL (only if DB_ENGINE=postgres)
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USER=owl_user
@@ -148,6 +155,7 @@ POSTGRES_DB=owl
 OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxxxxxx
 MAX_PROMPT_LENGTH=200000
 MAX_CHARS=200000
+MAX_CONTEXT_TOKENS=200000
 ```
 
 ---
@@ -218,26 +226,27 @@ curl -X POST http://localhost:8000/api/sync-to-sqlite
 
 ```plaintext
 .
-├── generated_components/
+├── generated_components/          # Output code files
+├── snapshots/                     # AI-generated project snapshots
 ├── services/
-│   ├── openrouter_service.py
-│   ├── chat_service.py
-│   ├── instruction_service.py
-│   └── file_service.py
+│   ├── openrouter_service.py      # OpenRouter API client
+│   ├── chat_service.py            # Session & token management
+│   ├── instruction_service.py     # System instructions CRUD
+│   ├── file_service.py            # Document text extraction
+│   └── snapshot_service.py        # Project snapshot system
 │
 ├── static/
-│   └── css/
-│       └── style.css
-│
 ├── templates/
-│   └── index.html
+│   └── index.html                 # Full SPA frontend
 │
-├── database.py
-├── models.py
-├── schemas.py
-├── migrate.py
-├── main.py
+├── database.py                    # DB engine, connection, auto-sync
+├── models.py                      # SQLAlchemy models
+├── schemas.py                     # Pydantic schemas
+├── migrate.py                     # CLI migration tool
+├── main.py                        # FastAPI application
+├── test_openrouter_connection.py  # Connection test
 ├── .env
+├── .gitignore
 ├── openrouter_studio.db
 └── requirements.txt
 ```
@@ -257,23 +266,35 @@ curl -X POST http://localhost:8000/api/sync-to-sqlite
 
 ### Chat Messages
 
-| Column     | Type     | Description        |
-| ---------- | -------- | ------------------ |
-| id         | Integer  | Message ID         |
-| session_id | Integer  | Session reference  |
-| role       | String   | User or assistant  |
-| content    | Text     | Message content    |
-| status     | String   | pending/done/error |
-| created_at | DateTime | Creation date      |
+| Column     | Type     | Description                      |
+| ---------- | -------- | -------------------------------- |
+| id         | Integer  | Message ID                       |
+| session_id | Integer  | Session reference                |
+| role       | String   | user / assistant / system        |
+| content    | Text     | Message content                  |
+| status     | String   | pending / done / error / cancelled |
+| created_at | DateTime | Creation date                    |
 
 ### System Instructions
 
-| Column    | Type    | Description    |
-| --------- | ------- | -------------- |
-| id        | Integer | Instruction ID |
-| title     | String  | Name           |
-| content   | Text    | Full content   |
-| is_active | Boolean | Active state   |
+| Column     | Type     | Description    |
+| ---------- | -------- | -------------- |
+| id         | Integer  | Instruction ID |
+| title      | String   | Name           |
+| content    | Text     | Full content   |
+| is_active  | Boolean  | Active state   |
+| created_at | DateTime | Creation date  |
+| updated_at | DateTime | Update date    |
+
+### Generation History
+
+| Column         | Type     | Description     |
+| -------------- | -------- | --------------- |
+| id             | Integer  | Record ID       |
+| prompt         | String   | User prompt     |
+| generated_code | Text     | Output code     |
+| filename       | String   | Saved filename  |
+| created_at     | DateTime | Creation date   |
 
 ---
 
@@ -293,15 +314,15 @@ if not str(safe_path).startswith(str(TARGET_BASE_DIR)):
 
 ### Input Validation
 
-* File extension whitelist
-* Max file size limit (50MB)
-* Prompt length limit
+- File extension whitelist
+- Max file size limit (50MB)
+- Prompt length limit via Pydantic
 
 ### Database Security
 
-* SQLAlchemy parameterized queries
-* Foreign key constraints
-* No raw SQL
+- SQLAlchemy parameterized queries
+- Foreign key constraints with CASCADE delete
+- No raw SQL in API endpoints
 
 ---
 
@@ -309,43 +330,76 @@ if not str(safe_path).startswith(str(TARGET_BASE_DIR)):
 
 ### Chat Operations
 
-| Method | Endpoint                | Description    |
-| ------ | ----------------------- | -------------- |
-| GET    | /                       | Main page      |
-| POST   | /api/chat/new           | Create session |
-| POST   | /api/chat/{id}/rename   | Rename session |
-| POST   | /api/chat/{id}/delete   | Delete session |
-| POST   | /api/chat/{id}/send     | Send message   |
-| GET    | /api/chat/{id}/messages | Get messages   |
+| Method | Endpoint                      | Description              |
+| ------ | ----------------------------- | ------------------------ |
+| GET    | /                             | Main page                |
+| GET    | /chat/{id}                    | Continue session         |
+| POST   | /api/chat/new                 | Create session           |
+| POST   | /api/chat/{id}/rename         | Rename session           |
+| POST   | /api/chat/{id}/delete         | Delete session           |
+| POST   | /api/chat/{id}/send           | Send message             |
+| POST   | /api/chat/{id}/generate       | Generate code (SSE)      |
+| GET    | /api/chat/{id}/messages       | Get session messages     |
+| POST   | /api/chat/{id}/compress       | Compress history         |
+| GET    | /api/message/{id}/status      | Poll message status      |
+| POST   | /api/message/{id}/stop        | Stop generation          |
+
+### Snapshot & Token
+
+| Method | Endpoint                         | Description              |
+| ------ | -------------------------------- | ------------------------ |
+| GET    | /api/session/{id}/token-status   | Token usage details      |
+| GET    | /api/session/{id}/token-bar      | Visual bar data          |
+| POST   | /api/session/{id}/snapshot       | Create project snapshot  |
+| GET    | /api/snapshots                   | List all snapshots       |
+| GET    | /api/snapshots/{filename}        | Download snapshot        |
+| DELETE | /api/snapshots/{filename}        | Delete snapshot          |
 
 ### System Instructions
 
-| Method | Endpoint                 | Description        |
-| ------ | ------------------------ | ------------------ |
-| GET    | /api/instructions        | List instructions  |
-| GET    | /api/instructions/active | Active instruction |
-| POST   | /api/instructions        | Create instruction |
-| PUT    | /api/instructions/{id}   | Update instruction |
-| DELETE | /api/instructions/{id}   | Delete instruction |
+| Method | Endpoint                       | Description             |
+| ------ | ------------------------------ | ----------------------- |
+| GET    | /api/instructions              | List instructions       |
+| GET    | /api/instructions/active       | Active instruction      |
+| GET    | /api/instructions/{id}         | Get instruction         |
+| POST   | /api/instructions              | Create instruction      |
+| PUT    | /api/instructions/{id}         | Update instruction      |
+| DELETE | /api/instructions/{id}         | Delete instruction      |
+| POST   | /api/instructions/{id}/activate| Set as active           |
+| POST   | /api/instructions/initialize-default | Reset to default  |
 
 ### File Operations
 
-| Method | Endpoint    | Description           |
-| ------ | ----------- | --------------------- |
-| POST   | /api/upload | Upload & extract file |
+| Method | Endpoint    | Description              |
+| ------ | ----------- | ------------------------ |
+| POST   | /api/upload | Upload & extract file    |
+
+### Database Operations
+
+| Method | Endpoint             | Description          |
+| ------ | -------------------- | -------------------- |
+| GET    | /api/config          | Frontend config      |
+| GET    | /api/db-status       | Database stats       |
+| POST   | /api/sync-to-postgres| SQLite → PostgreSQL  |
+| POST   | /api/sync-to-sqlite  | PostgreSQL → SQLite  |
 
 ---
 
 ## 🎨 UI Features
 
-* 🌙 Dark / Light Mode
-* 📊 Character Counter
-* ⌨️ Typing Indicator
-* 📋 Copy Code Button
-* 🔄 Message Regeneration
-* ✏️ Inline Editing
-* 📱 Responsive Design
-* 🌐 RTL Support
+- 🌙 Dark / Light Mode toggle with persistence
+- 📊 Live Token Usage Progress Bar in header
+- 🚨 Smart Alert Modals (85%/90%/95%/100% context) in Persian
+- 📸 Snapshot System — AI summary + history clear + one-click restore
+- 🗜️ Compress Chat History with statistics
+- 📎 File Upload with instant text extraction
+- 📋 Copy Code Button per code block
+- 🔄 Message Regeneration & Retry
+- ✏️ Inline Message Editing
+- ⏹ Stop Generation with real cancellation
+- 📦 Export Chat as JSON / Markdown / Text
+- 📱 Fully Responsive Design
+- 🌐 RTL Persian Support
 
 ---
 
