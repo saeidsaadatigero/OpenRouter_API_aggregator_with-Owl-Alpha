@@ -1740,7 +1740,280 @@
 }
 
 #compress-modal-backdrop.open { display: flex; }
+/* ── TOKEN BAR ─────────────────────────────── */
+.token-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+}
 
+.token-bar-container.notice {
+    border-color: rgba(86, 212, 240, 0.4);
+    color: var(--cyan);
+}
+
+.token-bar-container.warning {
+    border-color: rgba(245, 197, 66, 0.5);
+    color: var(--yellow);
+}
+
+.token-bar-container.critical {
+    border-color: rgba(240, 86, 122, 0.5);
+    color: var(--red);
+    animation: pulse-border 1.5s infinite;
+}
+
+.token-bar-container.blocked {
+    border-color: var(--red);
+    background: rgba(240, 86, 122, 0.1);
+    color: var(--red);
+    animation: pulse-border 0.8s infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.token-bar-bg {
+    width: 60px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.token-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease, background 0.3s ease;
+}
+
+.token-bar-fill.ok { background: var(--green); }
+.token-bar-fill.notice { background: var(--cyan); }
+.token-bar-fill.warning { background: var(--yellow); }
+.token-bar-fill.critical { background: var(--red); }
+.token-bar-fill.blocked { background: var(--red); }
+
+/* ── SNAPSHOT MODAL ─────────────────────────── */
+#snapshot-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 350;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#snapshot-modal-backdrop.open { display: flex; }
+
+/* ── ALERT MODALS ───────────────────────────── */
+.alert-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-modal-backdrop.open { display: flex; }
+
+.alert-modal-surface {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    width: 100%;
+    max-width: 420px;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    animation: modal-in 0.2s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.alert-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+}
+
+.alert-modal-icon.info {
+    background: rgba(86, 212, 240, 0.15);
+    color: var(--cyan);
+}
+
+.alert-modal-icon.warning {
+    background: rgba(245, 197, 66, 0.15);
+    color: var(--yellow);
+}
+
+.alert-modal-icon.critical {
+    background: rgba(240, 86, 122, 0.15);
+    color: var(--red);
+}
+
+.alert-modal-title {
+    font-family: var(--font-ui);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.alert-modal-text {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.alert-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.alert-btn {
+    padding: 9px 22px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+}
+
+.alert-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #5b4fcf);
+    box-shadow: 0 2px 12px rgba(124, 10, 247, 0.3);
+}
+
+.alert-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(124, 10, 247, 0.45);
+}
+
+.alert-btn-secondary {
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-light);
+}
+
+.alert-btn-secondary:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.alert-btn-warning {
+    color: #fff;
+    background: linear-gradient(135deg, var(--yellow), #e0a800);
+    box-shadow: 0 2px 12px rgba(245, 197, 66, 0.3);
+}
+
+.alert-btn-warning:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(245, 197, 66, 0.45);
+}
+
+.alert-btn-danger {
+    color: #fff;
+    background: linear-gradient(135deg, var(--red), #c0392b);
+    box-shadow: 0 2px 12px rgba(240, 86, 122, 0.3);
+}
+
+.alert-btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(240, 86, 122, 0.45);
+}
+
+/* ── SNAPSHOT RESULT MODAL ──────────────────── */
+.snapshot-result-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 16px;
+}
+
+.snapshot-result-textarea {
+    width: 100%;
+    min-height: 200px;
+    background: var(--bg-surface);
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-primary);
+    outline: none;
+    resize: vertical;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.snapshot-result-textarea:focus {
+    box-shadow: 0 0 0 3px var(--accent-glow2);
+}
+#snapshot-result-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 360;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#snapshot-result-modal-backdrop.open {
+    display: flex;
+}
+
+.snapshot-result-textarea {
+    width: 100%;
+    min-height: 200px;
+    background: var(--bg-surface);
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-primary);
+    outline: none;
+    resize: vertical;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
     </style>
 </head>
 <body>
@@ -1815,12 +2088,12 @@
                 {% endif %}
             </div>
 <div class="header-right">
-    <!-- 🌙 دکمه شب/روز -->
+    <!-- 🌙 Theme Toggle -->
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
         <i class="fas fa-moon" id="theme-icon"></i>
     </button>
     
-    <!-- ⚙️ دکمه Settings -->
+    <!-- ⚙️ Settings -->
     <button class="theme-toggle" onclick="openSettingsModal()" title="System Instructions">
         <i class="fas fa-cog"></i>
     </button>
@@ -1848,8 +2121,22 @@
         <i class="fas fa-compress-alt" style="color:var(--yellow)"></i>
     </button>
     
-    <span class="model-badge">Owl-Alpha/ Chat</span>
+    <!-- 📸 Snapshot -->
+    <button class="theme-toggle" onclick="openSnapshotModal()" title="Create Snapshot">
+        <i class="fas fa-camera" style="color:var(--accent-soft)"></i>
+    </button>
+    
+    <!-- 📊 Token Bar -->
+    <div class="token-bar-container" id="token-bar-container" title="Context Usage">
+        <div class="token-bar-bg">
+            <div class="token-bar-fill ok" id="token-bar-fill" style="width:0%"></div>
+        </div>
+        <span id="token-bar-text" style="white-space:nowrap">0%</span>
+    </div>
+    
+    <span class="model-badge">Owl-Alpha / Chat</span>
 </div>
+
         </header>
 
         <div id="chat-messages">
@@ -2229,6 +2516,30 @@ document.addEventListener("DOMContentLoaded", () => {
             appendMessageBubble('assistant', '⚠️ Connection error. Please try again.');
         }
     });
+        // ── Modal backdrop click listeners ──────────
+    const compressBackdrop = document.getElementById('compress-modal-backdrop');
+    if (compressBackdrop) {
+        compressBackdrop.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeCompressModal();
+        });
+    }
+
+    const snapshotBackdrop = document.getElementById('snapshot-modal-backdrop');
+    if (snapshotBackdrop) {
+        snapshotBackdrop.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeSnapshotModal();
+        });
+    }
+
+    const snapshotResultBackdrop = document.getElementById('snapshot-result-modal-backdrop');
+    if (snapshotResultBackdrop) {
+        snapshotResultBackdrop.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeSnapshotResultModal();
+        });
+    }
+
+    // Start token bar polling
+    startTokenBarPolling();
 });
 
 // ── Show Empty State ────────────────────────────
@@ -2849,10 +3160,296 @@ async function executeCompress() {
     }
 }
 
-// بستن مودال با کلیک بیرون
-document.getElementById('compress-modal-backdrop').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeCompressModal();
-});
+
+// ═══════════════════════════════════════════════════════
+// ── TOKEN COUNTER ──────────────────────────────────
+// ═══════════════════════════════════════════════════════
+
+let tokenBarInterval = null;
+
+function updateTokenBar() {
+    if (!activeSessionId) return;
+    
+    fetch(`/api/session/${activeSessionId}/token-bar`)
+        .then(r => r.json())
+        .then(data => {
+            const info = data.info;
+            const barFill = document.getElementById('token-bar-fill');
+            const barText = document.getElementById('token-bar-text');
+            const container = document.getElementById('token-bar-container');
+            
+            if (!barFill || !barText || !container) return;
+            
+            // Update bar width
+            barFill.style.width = info.percentage + '%';
+            barText.textContent = info.percentage + '%';
+            
+            // Update colors based on warning level
+            barFill.className = 'token-bar-fill ' + info.warning_level;
+            container.className = 'token-bar-container ' + info.warning_level;
+            
+            // Check for alerts
+            checkTokenAlerts(info);
+        })
+        .catch(e => console.warn('[TOKEN-BAR]', e));
+}
+
+function checkTokenAlerts(info) {
+    // Only show alert once per level per session
+    const lastAlert = localStorage.getItem('last_token_alert_' + activeSessionId);
+    
+    if (info.warning_level === 'blocked' && lastAlert !== 'blocked') {
+        showAlertModal('blocked');
+        localStorage.setItem('last_token_alert_' + activeSessionId, 'blocked');
+    } else if (info.warning_level === 'critical' && lastAlert !== 'critical' && lastAlert !== 'blocked') {
+        showAlertModal('critical');
+        localStorage.setItem('last_token_alert_' + activeSessionId, 'critical');
+    } else if (info.warning_level === 'warning' && !lastAlert) {
+        showAlertModal('warning');
+        localStorage.setItem('last_token_alert_' + activeSessionId, 'warning');
+    } else if (info.warning_level === 'notice' && !lastAlert) {
+        showAlertModal('notice');
+        localStorage.setItem('last_token_alert_' + activeSessionId, 'notice');
+    }
+}
+
+function showAlertModal(level) {
+    const backdrop = document.getElementById('alert-modal-backdrop');
+    const icon = document.getElementById('alert-icon');
+    const title = document.getElementById('alert-title');
+    const text = document.getElementById('alert-text');
+    const actions = document.getElementById('alert-actions');
+    
+    const configs = {
+        notice: {
+            icon: '<i class="fas fa-info-circle"></i>',
+            iconClass: 'info',
+            title: 'اطلاع‌رسانی',
+            text: 'Context شما به ۸۵٪ رسیده. ممکنه بهتر باشه یه Snapshot بگیرید تا بعداً از دست نره.',
+            buttons: `<button class="alert-btn alert-btn-primary" onclick="closeAlertModal()">باشه</button>`
+        },
+        warning: {
+            icon: '<i class="fas fa-exclamation-triangle"></i>',
+            iconClass: 'warning',
+            title: 'هشدار Context',
+            text: 'Context شما به ۹۰٪ رسیده! پیشنهاد می‌کنیم یه Snapshot بگیرید و تاریخچه رو پاک کنید.',
+            buttons: `
+                <button class="alert-btn alert-btn-secondary" onclick="closeAlertModal()">بعداً</button>
+                <button class="alert-btn alert-btn-warning" onclick="closeAlertModal(); openSnapshotModal();">Snapshot کن</button>
+            `
+        },
+        critical: {
+            icon: '<i class="fas fa-exclamation-circle"></i>',
+            iconClass: 'critical',
+            title: 'هشدار جدی!',
+            text: 'Context شما به ۹۵٪ رسیده! به زودی خطای ۴۰۰ دریافت می‌کنید. لطفاً الان Snapshot بگیرید.',
+            buttons: `
+                <button class="alert-btn alert-btn-secondary" onclick="closeAlertModal()">بعداً</button>
+                <button class="alert-btn alert-btn-danger" onclick="closeAlertModal(); openSnapshotModal();">الان Snapshot کن</button>
+            `
+        },
+        blocked: {
+            icon: '<i class="fas fa-ban"></i>',
+            iconClass: 'critical',
+            title: 'Context پر شده!',
+            text: 'Context شما به ۱۰۰٪ رسیده. ارسال پیام غیرممکنه. لطفاً Snapshot بگیرید تا بتونید ادامه بدید.',
+            buttons: `
+                <button class="alert-btn alert-btn-danger" onclick="closeAlertModal(); openSnapshotModal();">Snapshot کن</button>
+            `
+        }
+    };
+    
+    const config = configs[level];
+    if (!config) return;
+    
+    icon.innerHTML = config.icon;
+    icon.className = 'alert-modal-icon ' + config.iconClass;
+    title.textContent = config.title;
+    text.textContent = config.text;
+    actions.innerHTML = config.buttons;
+    
+    backdrop.classList.add('open');
+}
+
+function closeAlertModal() {
+    document.getElementById('alert-modal-backdrop').classList.remove('open');
+}
+
+function startTokenBarPolling() {
+    // توقف درخواست قبلی
+    if (tokenBarInterval) {
+        clearInterval(tokenBarInterval);
+        tokenBarInterval = null;
+    }
+    
+    // اگه session فعال نیست، شروع نکن
+    if (!activeSessionId) {
+        return;
+    }
+    
+    // اولین بار رو بلافاصله اجرا کن
+    updateTokenBar();
+    
+    // هر ۵ ثانیه آپدیت کن
+    tokenBarInterval = setInterval(() => {
+        if (!activeSessionId) {
+            clearInterval(tokenBarInterval);
+            tokenBarInterval = null;
+            return;
+        }
+        updateTokenBar();
+    }, 5000);
+}
+
+
+
+// ═══════════════════════════════════════════════════════
+// ── SNAPSHOT ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+
+function openSnapshotModal() {
+    if (!activeSessionId) {
+        alert('ابتدا یه چت جدید بسازید!');
+        return;
+    }
+    
+    // Reset modal state
+    document.getElementById('snapshot-loading').style.display = 'none';
+    document.getElementById('snapshot-actions').style.display = 'flex';
+    document.getElementById('snapshot-confirm-btn').disabled = false;
+    
+    document.getElementById('snapshot-modal-backdrop').classList.add('open');
+}
+
+function closeSnapshotModal() {
+    document.getElementById('snapshot-modal-backdrop').classList.remove('open');
+}
+
+async function executeSnapshot() {
+    const btn = document.getElementById('snapshot-confirm-btn');
+    
+    // Show loading
+    document.getElementById('snapshot-loading').style.display = 'block';
+    document.getElementById('snapshot-actions').style.display = 'none';
+    
+    try {
+        const res = await fetch(`/api/session/${activeSessionId}/snapshot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        // ✨ اول response text رو بگیر
+        const responseText = await res.text();
+        console.log('[SNAPSHOT] Raw response:', responseText);
+        
+        // ✨ سعی کن JSON parse کنی
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('[SNAPSHOT] JSON parse error:', parseError);
+            throw new Error('Invalid response from server: ' + responseText.substring(0, 200));
+        }
+        
+        if (!res.ok) {
+            throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        
+        // ✨ چک کن snapshot_content وجود داره
+        if (!data.snapshot_content) {
+            throw new Error('Snapshot content is empty');
+        }
+        
+        // Close confirm modal
+        closeSnapshotModal();
+        
+        // Show result modal with content
+        const textarea = document.getElementById('snapshot-result-textarea');
+        if (textarea) {
+            textarea.value = data.snapshot_content;
+        }
+        
+        const resultBackdrop = document.getElementById('snapshot-result-modal-backdrop');
+        if (resultBackdrop) {
+            resultBackdrop.classList.add('open');
+        }
+        
+        // Clear chat UI
+        document.getElementById('chat-messages').innerHTML = '';
+        showEmptyState();
+        
+        // Reset token bar
+        updateTokenBar();
+        
+        // Reset alert tracking
+        localStorage.removeItem('last_token_alert_' + activeSessionId);
+        
+    } catch (e) {
+        console.error('[SNAPSHOT] Error:', e);
+        closeSnapshotModal();
+        alert('❌ خطا در ثبت Snapshot: ' + e.message);
+    }
+}
+
+function closeSnapshotResultModal() {
+    document.getElementById('snapshot-result-modal-backdrop').classList.remove('open');
+}
+
+function downloadSnapshotText() {
+    const content = document.getElementById('snapshot-result-textarea').value;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snapshot_${activeSessionId}_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function enableSend() {
+    // فقط دکمه Submit رو فعال کن (بدون ارسال خودکار)
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="font-size:12px"></i>';
+    }
+    
+    // اگه می‌خوای متن رو هم در input بذاری:
+    const textarea = document.getElementById('snapshot-result-textarea');
+    if (textarea && textarea.value.trim()) {
+        const promptInput = document.getElementById('prompt-input');
+        promptInput.value = textarea.value.trim();
+        promptInput.style.height = 'auto';
+        promptInput.style.height = Math.min(promptInput.scrollHeight, 400) + 'px';
+        updateCharCounter();
+    }
+}
+
+
+// ═══ این تابع رو بعد از تابع enableSend() اضافه کن ═══
+
+function sendSnapshotAsMessage() {
+    const textarea = document.getElementById('snapshot-result-textarea');
+    const content = textarea.value.trim();
+    
+    if (!content) {
+        alert('متن Snapshot خالی است!');
+        return;
+    }
+    
+    // بستن مودال
+    closeSnapshotResultModal();
+    
+    // قرار دادن متن در input و ارسال
+    const promptInput = document.getElementById('prompt-input');
+    promptInput.value = content;
+    promptInput.style.height = 'auto';
+    promptInput.style.height = Math.min(promptInput.scrollHeight, 400) + 'px';
+    updateCharCounter();
+    
+    // ارسال فرم
+    document.getElementById('generation-form').requestSubmit();
+}
     </script>
 
 
@@ -2902,6 +3499,88 @@ document.getElementById('compress-modal-backdrop').addEventListener('click', (e)
             <button id="compress-execute-btn" onclick="executeCompress()" class="modal-btn-save" style="background:linear-gradient(135deg,var(--yellow),#e0a800)">
                 <i class="fas fa-compress-alt"></i> Compress
             </button>
+        </div>
+    </div>
+</div>
+<!-- ═══ SNAPSHOT CONFIRM MODAL ═══ -->
+<div id="snapshot-modal-backdrop">
+    <div class="modal-surface" style="max-width:450px">
+        <div style="text-align:center;margin-bottom:20px">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(124,106,247,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+                <i class="fas fa-camera" style="font-size:22px;color:var(--accent-soft)"></i>
+            </div>
+            <p class="modal-title" style="margin-bottom:4px">ثبت تصویر پروژه</p>
+            <p style="font-size:12px;color:var(--text-muted);margin:0">آیا از ثبت Snapshot مطمئن هستید؟</p>
+        </div>
+        
+        <div style="background:var(--bg-surface);border-radius:10px;padding:14px;margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <i class="fas fa-check-circle" style="color:var(--green);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-primary)">خلاصه کامل پروژه توسط AI نوشته می‌شه</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <i class="fas fa-check-circle" style="color:var(--green);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-primary)">فایل در سرور ذخیره می‌شه</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <i class="fas fa-check-circle" style="color:var(--green);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-primary)">تاریخچه چت پاک می‌شه</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <i class="fas fa-exclamation-triangle" style="color:var(--yellow);font-size:14px"></i>
+                <span style="font-size:13px;color:var(--text-muted)">این عمل قابل بازگشت نیست</span>
+            </div>
+        </div>
+        
+        <div id="snapshot-loading" style="display:none;text-align:center;padding:20px">
+            <i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--accent-soft);margin-bottom:12px"></i>
+            <p style="font-size:13px;color:var(--text-muted);margin:0">در حال تولید تصویر پروژه...</p>
+        </div>
+        
+        <div class="modal-actions" id="snapshot-actions">
+            <button onclick="closeSnapshotModal()" class="modal-btn-cancel">انصراف</button>
+            <button id="snapshot-confirm-btn" onclick="executeSnapshot()" class="modal-btn-save">
+                <i class="fas fa-camera"></i> ثبت Snapshot
+            </button>
+        </div>
+    </div>
+</div>
+<!-- ═══ SNAPSHOT RESULT MODAL ═══ -->
+<div id="snapshot-result-modal-backdrop" style="z-index:360">
+    <div class="modal-surface" style="max-width:600px">
+        <div style="text-align:center;margin-bottom:16px">
+            <div style="width:48px;height:48px;border-radius:50%;background:rgba(61,214,140,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+                <i class="fas fa-check" style="font-size:20px;color:var(--green)"></i>
+            </div>
+            <p class="modal-title" style="margin-bottom:4px">Snapshot ثبت شد!</p>
+            <p style="font-size:12px;color:var(--text-muted);margin:0">این متن تنها زمینه شماست. می‌تونید ویرایش کنید.</p>
+        </div>
+        
+        <textarea id="snapshot-result-textarea" class="snapshot-result-textarea" placeholder="Snapshot content will appear here..."></textarea>
+        
+        <div class="modal-actions">
+            <button onclick="downloadSnapshotText()" class="modal-btn-cancel">
+                <i class="fas fa-download"></i> دانلود
+            </button>
+            <button onclick="sendSnapshotAsMessage()" class="modal-btn-save">
+                <i class="fas fa-paper-plane"></i> ارسال به عنوان پیام
+            </button>
+        </div>
+    </div>
+</div>
+<!-- ═══ ALERT MODAL (Token Warnings) ═══ -->
+<div id="alert-modal-backdrop" class="alert-modal-backdrop">
+    <div class="alert-modal-surface">
+        <div style="text-align:center;margin-bottom:16px">
+            <div class="alert-modal-icon" id="alert-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <p class="alert-modal-title" id="alert-title">هشدار</p>
+            <p class="alert-modal-text" id="alert-text">متن هشدار</p>
+        </div>
+        
+        <div class="alert-modal-actions" id="alert-actions">
+            <!-- Buttons will be injected dynamically -->
         </div>
     </div>
 </div>

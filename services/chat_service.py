@@ -190,3 +190,74 @@ class ChatService:
         
         logger.info(f"[AGGRESSIVE-COMPRESS] Done: {len(messages)} msgs → {len(compressed)} chars")
         return len(compressed)
+
+    def get_session_token_count(self, session_id: int) -> dict:
+        """
+        Calculate token usage for a session.
+        Returns dict with: total_chars, total_tokens, percentage, message_count
+        """
+        messages = self.get_session_messages(session_id)
+        
+        total_chars = 0
+        message_count = 0
+        
+        for msg in messages:
+            if msg.content and msg.status in ("done", "pending"):
+                total_chars += len(msg.content)
+                message_count += 1
+        
+        # Simple estimation: 1 token ≈ 4 chars
+        total_tokens = total_chars // 4
+        
+        # Context window (1M tokens for owl-alpha)
+        MAX_CONTEXT_TOKENS = 1_048_576
+        percentage = min(round((total_tokens / MAX_CONTEXT_TOKENS) * 100, 1), 100)
+        
+        return {
+            "session_id": session_id,
+            "total_chars": total_chars,
+            "total_tokens": total_tokens,
+            "max_tokens": MAX_CONTEXT_TOKENS,
+            "percentage": percentage,
+            "message_count": message_count,
+            "warning_level": self._get_warning_level(percentage)
+        }
+
+    @staticmethod
+    def _get_warning_level(percentage: float) -> str:
+        """Determine warning level based on context usage percentage."""
+        if percentage >= 100:
+            return "blocked"
+        elif percentage >= 95:
+            return "critical"
+        elif percentage >= 90:
+            return "warning"
+        elif percentage >= 85:
+            return "notice"
+        else:
+            return "ok"
+
+    def get_token_bar(self, session_id: int, bar_length: int = 10) -> str:
+        """
+        Generate a visual progress bar string.
+        Example: "████████░░ 85%"
+        """
+        info = self.get_session_token_count(session_id)
+        percentage = info["percentage"]
+        
+        filled = int(bar_length * percentage / 100)
+        empty = bar_length - filled
+        
+        bar = "█" * filled + "░" * empty
+        
+        # Format tokens for display
+        total_k = info["total_tokens"] // 1000
+        max_k = info["max_tokens"] // 1000
+        
+        return f"Context: {bar} {percentage}% | {total_k}K / {max_k}K"
+
+    def get_session(self, session_id: int):
+        """Get a session by ID."""
+        return self.db.query(models.ChatSession).filter(
+            models.ChatSession.id == session_id
+        ).first()
