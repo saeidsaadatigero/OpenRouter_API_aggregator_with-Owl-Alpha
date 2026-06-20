@@ -193,6 +193,9 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
 
             elapsed = time.time() - t0
             logger.info(f"[BG-TASK-RESPONSE] message_id={message_id} elapsed={elapsed:.1f}s")
+            
+            # ✨ لاگ کامل پاسخ برای خطایابی
+            logger.info(f"[BG-TASK-DUMP] message_id={message_id} finish_reason={response.choices[0].finish_reason if response.choices else 'NO_CHOICES'} model={response.model} usage={response.usage}")
 
             if cancel_event.is_set():
                 logger.info(f"[BG-TASK-CANCELLED] message_id={message_id} cancelled after API call")
@@ -204,6 +207,7 @@ def run_llm_in_background(message_id: int, messages_payload: list, model_name: s
                 raise ValueError("Empty response object from API")
 
             if not response.choices or len(response.choices) == 0:
+                logger.error(f"[BG-TASK-EMPTY] message_id={message_id} full_response={response}")
                 raise ValueError("No choices in response from API")
 
             if response.choices[0].message is None:
