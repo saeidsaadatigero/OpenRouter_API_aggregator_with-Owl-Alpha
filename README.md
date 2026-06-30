@@ -9,8 +9,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.2-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![SQLite](https://img.shields.io/badge/SQLite-3.49-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-Owl--Alpha-7C3AED?style=for-the-badge&logo=openai&logoColor=white)](https://openrouter.ai)
-
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-Nemotron--3--Super-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://openrouter.ai)
 <p align="center">
 A high-performance AI chat and code generation studio with dual-database support, real-time SSE streaming, context-aware snapshot system, and intelligent document text extraction.
 </p>
@@ -72,7 +71,7 @@ graph TD
 | Layer              | Technology                     | Role                      |
 | ------------------ | ------------------------------ | ------------------------- |
 | Async Framework    | FastAPI + Uvicorn              | API & SSE Streaming       |
-| LLM Client         | OpenAI (Sync + Async)          | OpenRouter integration    |
+| LLM Client         | OpenAI (Sync + Async)          | OpenRouter (Nemotron 3 Super)    |
 | Database           | SQLAlchemy + SQLite/PostgreSQL | Dual DB support           |
 | Frontend           | Jinja2 + Tailwind CSS          | Dynamic UI                |
 | File Processing    | pdfplumber, python-docx, pptx, openpyxl | Text extraction   |
@@ -156,6 +155,20 @@ OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxxxxxx
 MAX_PROMPT_LENGTH=200000
 MAX_CHARS=200000
 MAX_CONTEXT_TOKENS=200000
+
+# Active model for OpenRouter API (default: nvidia/nemotron-3-super:free)
+OPENROUTER_MODEL=nvidia/nemotron-3-super:free
+
+# Models available for selection
+MODEL_GEMMA=google/gemma-4-31b-it:free
+MODEL_NVIDIA=nvidia/nemotron-3-super:free
+MODEL_QWEN=qwen/qwen3-coder-480b-a35b:free
+
+# Available models (True = Active)
+MODEL_GEMMA_ACTIVE=False
+MODEL_NVIDIA_ACTIVE=True
+MODEL_QWEN_ACTIVE=False
+
 ```
 
 ---
