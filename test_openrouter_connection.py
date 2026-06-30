@@ -7,7 +7,7 @@ from decouple import config
 # خواندن کلید از .env
 API_KEY = config("OPENROUTER_API_KEY", default="")
 BASE_URL = "https://openrouter.ai/api/v1"
-MODEL = "openrouter/owl-alpha"
+MODEL = config("OPENROUTER_MODEL", default="nvidia/nemotron-3-super-120b-a12b:free")
 
 async def test():
     print(f"🔑 API Key loaded: {'✅ Yes' if API_KEY else '❌ No'}")
