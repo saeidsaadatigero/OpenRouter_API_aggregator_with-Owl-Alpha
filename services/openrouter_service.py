@@ -9,10 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class OpenRouterCodingService:
-    def __init__(self, model_name: str = "openrouter/owl-alpha") -> None:
+    def __init__(self, model_name: str = None) -> None:
         self.api_key: str = config("OPENROUTER_API_KEY", default="")
         self.base_url: str = "https://openrouter.ai/api/v1"
-        self.model_name: str = model_name
+        self.model_name: str = model_name or config("OPENROUTER_MODEL", default="nvidia/nemotron-3-super:free")
+
         
         if not self.api_key:
             logger.error("[CRITICAL] OPENROUTER_API_KEY configuration token is missing from environment.")
