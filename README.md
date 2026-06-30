@@ -157,17 +157,19 @@ MAX_CHARS=200000
 MAX_CONTEXT_TOKENS=200000
 
 # Active model for OpenRouter API (default: nvidia/nemotron-3-super:free)
-OPENROUTER_MODEL=nvidia/nemotron-3-super:free
+OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 
 # Models available for selection
 MODEL_GEMMA=google/gemma-4-31b-it:free
-MODEL_NVIDIA=nvidia/nemotron-3-super:free
-MODEL_QWEN=qwen/qwen3-coder-480b-a35b:free
+MODEL_NVIDIA=nvidia/nemotron-3-super-120b-a12b:free
+MODEL_QWEN=qwen/qwen3-coder:free
+OWL_ALPHA=openrouter/owl-alpha
 
 # Available models (True = Active)
 MODEL_GEMMA_ACTIVE=False
 MODEL_NVIDIA_ACTIVE=True
 MODEL_QWEN_ACTIVE=False
+OWL_ALPHA_ACTIVE=False
 
 ```
 
