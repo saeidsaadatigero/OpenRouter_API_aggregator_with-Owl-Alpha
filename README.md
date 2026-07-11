@@ -421,6 +421,7 @@ if not str(safe_path).startswith(str(TARGET_BASE_DIR)):
 <div align="center">
 
 Built with ❤️ by Saeid Saadatigero
+<!-- Quickdraw test for issue #2 -->
 
 If you found this useful, consider giving the repository a ⭐
 
