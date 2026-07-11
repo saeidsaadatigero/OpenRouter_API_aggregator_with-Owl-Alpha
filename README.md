@@ -425,4 +425,4 @@ Built with ❤️ by Saeid Saadatigero
 If you found this useful, consider giving the repository a ⭐
 
 </div>
-<!-- test for YOLO -->
+Co-authored-by: Saeid Saadatigero <saeidsaadatigero@gmail.com>
